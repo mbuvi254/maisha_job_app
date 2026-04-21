@@ -1,0 +1,65 @@
+{% extends 'employer/employer_base.html' %}
+{% block page_title %}Candidate Detail{% endblock %}
+{% block content %}
+    <div class="page-header">
+        <div>
+            <h1 class="fw-bold mb-1">Candidate Detail</h1>
+            <p class="text-muted">Review candidate information.</p>
+        </div>
+        <a href="{{ url_for('employer_bp.employer_dashboard') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back
+        </a>
+    </div>
+
+    <div class="portal-card bg-white p-4 p-lg-5">
+        {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% elif candidate %}
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="metric-card p-4 text-center h-100">
+                        <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" style="width: 4rem; height: 4rem;">
+                            <i class="bi bi-person fs-4"></i>
+                        </div>
+                        <h2 class="h5 mb-1">{{ candidate.first_name }} {{ candidate.last_name }}</h2>
+                        <p class="text-muted mb-0">{{ candidate.email }}</p>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <div class="metric-card p-3 h-100">
+                                <div class="text-muted small text-uppercase">First Name</div>
+                                <div class="fw-semibold">{{ candidate.first_name }}</div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="metric-card p-3 h-100">
+                                <div class="text-muted small text-uppercase">Last Name</div>
+                                <div class="fw-semibold">{{ candidate.last_name }}</div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="metric-card p-3 h-100">
+                                <div class="text-muted small text-uppercase">Email</div>
+                                <div class="fw-semibold">{{ candidate.email }}</div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="metric-card p-3 h-100">
+                                <div class="text-muted small text-uppercase">Phone</div>
+                                <div class="fw-semibold">{{ candidate.phone }}</div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="metric-card p-3">
+                                <div class="text-muted small text-uppercase">Candidate ID</div>
+                                <div class="fw-semibold text-break">{{ candidate.id }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

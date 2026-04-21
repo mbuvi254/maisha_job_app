@@ -1,0 +1,124 @@
+{% extends 'employer/employer_base.html' %}
+{% block page_title %}Application Detail{% endblock %}
+{% block content %}
+    <div class="page-header">
+        <div>
+            <h1 class="fw-bold mb-1">Application Detail</h1>
+            <p class="text-muted">View candidate responses, interview score, and application status.</p>
+        </div>
+        <a href="{{ url_for('employer_bp.view_job_applications', job_id=job.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="portal-card bg-white p-4 h-100">
+                <h2 class="h5 fw-bold mb-3">Candidate</h2>
+                {% if candidate %}
+                    <div class="metric-card p-4 text-center mb-3">
+                        <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" style="width: 4rem; height: 4rem;">
+                            <i class="bi bi-person fs-4"></i>
+                        </div>
+                        <h3 class="h5 mb-1">{{ candidate.first_name }} {{ candidate.last_name }}</h3>
+                        <p class="text-muted mb-0">{{ candidate.email }}</p>
+                    </div>
+                    <div class="small text-muted">Phone</div>
+                    <div class="fw-semibold mb-3">{{ candidate.phone or 'N/A' }}</div>
+                    <div class="small text-muted">Candidate ID</div>
+                    <div class="fw-semibold text-break">{{ candidate.id }}</div>
+                {% else %}
+                    <div class="alert alert-warning mb-0">Candidate information is unavailable.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="portal-card bg-white p-4 mb-4">
+                <h2 class="h5 fw-bold mb-3">Application Summary</h2>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="metric-card p-3 h-100">
+                            <div class="text-muted small text-uppercase">Status</div>
+                            <div class="fw-semibold">{{ application.status }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="metric-card p-3 h-100">
+                            <div class="text-muted small text-uppercase">Application Score</div>
+                            <div class="fw-semibold">{{ application.score }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="metric-card p-3 h-100">
+                            <div class="text-muted small text-uppercase">Applied On</div>
+                            <div class="fw-semibold">{{ application.created_at }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="portal-card bg-white p-4 mb-4">
+                <h2 class="h5 fw-bold mb-3">Interview Summary</h2>
+                {% if interview %}
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="metric-card p-3 h-100">
+                                <div class="text-muted small text-uppercase">Interview Status</div>
+                                <div class="fw-semibold">{{ interview.status }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="metric-card p-3 h-100">
+                                <div class="text-muted small text-uppercase">Total Score</div>
+                                <div class="fw-semibold">{{ interview.total_score }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="metric-card p-3 h-100">
+                                <div class="text-muted small text-uppercase">Average Score</div>
+                                <div class="fw-semibold">{{ interview_average }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="metric-card p-3 h-100">
+                                <div class="text-muted small text-uppercase">Responses</div>
+                                <div class="fw-semibold">{{ interview.response_count }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if interview_responses %}
+                        <div class="d-grid gap-3">
+                            {% for response in interview_responses %}
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+                                            <div>
+                                                <div class="fw-semibold mb-1">Question {{ loop.index }}</div>
+                                                <p class="mb-0">{{ response.question }}</p>
+                                            </div>
+                                            <span class="badge text-bg-success">Score {{ response.score }}</span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <div class="text-muted small text-uppercase">Candidate Answer</div>
+                                            <div>{{ response.answer }}</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-muted small text-uppercase">AI Feedback</div>
+                                            <div class="text-muted">{{ response.feedback }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info mb-0">No interview responses found yet.</div>
+                    {% endif %}
+                {% else %}
+                    <div class="alert alert-warning mb-0">No interview was started for this application.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

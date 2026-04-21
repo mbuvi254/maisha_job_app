@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block page_title %}Employer Portal{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --sidebar-bg: #0f172a;
+            --sidebar-accent: #38bdf8;
+            --page-bg: #f8fafc;
+            --card-border: #e2e8f0;
+        }
+
+        body {
+            background: var(--page-bg);
+        }
+
+        .employer-shell {
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            position: sticky;
+            top: 0;
+        }
+
+        .sidebar .brand {
+            color: #fff;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .sidebar .nav-link {
+            color: #cbd5e1;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.35rem;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background: rgba(56, 189, 248, 0.12);
+            color: #fff;
+        }
+
+        .sidebar .nav-link i {
+            width: 1.25rem;
+        }
+
+        .portal-card {
+            border: 1px solid var(--card-border);
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+            border-radius: 1rem;
+        }
+
+        .metric-card {
+            border: 1px solid var(--card-border);
+            border-radius: 1rem;
+            background: #fff;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .page-header h1,
+        .page-header p {
+            margin: 0;
+        }
+
+        @media (max-width: 991.98px) {
+            .sidebar {
+                min-height: auto;
+                position: relative;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid employer-shell">
+        <div class="row g-0">
+            <aside class="col-lg-3 col-xl-2 sidebar p-4">
+                <div class="d-flex align-items-center gap-2 mb-4">
+                    <div class="rounded-circle bg-info text-dark d-inline-flex align-items-center justify-content-center" style="width: 2.75rem; height: 2.75rem;">
+                        <i class="bi bi-building"></i>
+                    </div>
+                    <div>
+                        <div class="brand">Employer Portal</div>
+                        <small class="text-secondary-emphasis">Jobs dashboard</small>
+                    </div>
+                </div>
+
+                {% if employer %}
+                    <div class="bg-dark bg-opacity-25 rounded-4 p-3 mb-4">
+                        <div class="fw-semibold">{{ employer.firstName }} {{ employer.lastName }}</div>
+                        <div class="small text-light-emphasis">{{ employer.email }}</div>
+                        <span class="badge text-bg-{{ 'success' if employer.verified else 'warning' }} mt-2">
+                            {{ 'Verified' if employer.verified else 'Pending verification' }}
+                        </span>
+                    </div>
+                {% endif %}
+
+                <nav class="nav flex-column">
+                    <a class="nav-link {% if request.endpoint == 'employer_bp.employer_dashboard' %}active{% endif %}" href="{{ url_for('employer_bp.employer_dashboard') }}">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                    <a class="nav-link {% if request.endpoint == 'employer_bp.add_job' %}active{% endif %}" href="{{ url_for('employer_bp.add_job') }}">
+                        <i class="bi bi-plus-circle"></i> Add Job
+                    </a>
+                    <a class="nav-link {% if request.endpoint == 'employer_bp.employer_profile' %}active{% endif %}" href="{{ url_for('employer_bp.employer_profile') }}">
+                        <i class="bi bi-person"></i> Profile
+                    </a>
+                    <a class="nav-link" href="{{ url_for('employer_bp.employer_logout') }}">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                </nav>
+            </aside>
+
+            <main class="col-lg-9 col-xl-10 p-4 p-lg-5">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="mb-4">
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} portal-card mb-2" role="alert">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

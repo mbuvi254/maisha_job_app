@@ -1,0 +1,78 @@
+{% extends 'employer/employer_base.html' %}
+{% set form_title = page_title or 'Add Job' %}
+{% set submit_text = submit_label or 'Create Job' %}
+{% block page_title %}{{ form_title }}{% endblock %}
+{% block content %}
+    <div class="page-header">
+        <div>
+            <h1 class="fw-bold mb-1">{{ form_title }}</h1>
+            <p class="text-muted">
+                {% if job %}
+                    Update the details of this job posting.
+                {% else %}
+                    Create a new job listing for your organization.
+                {% endif %}
+            </p>
+        </div>
+        <a href="{{ url_for('employer_bp.employer_dashboard') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back
+        </a>
+    </div>
+
+    <div class="portal-card bg-white p-4 p-lg-5">
+        {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="{{ form_action or url_for('employer_bp.add_job') }}" class="row g-4">
+            <div class="col-12">
+                <label for="title" class="form-label">Job Title</label>
+                <input type="text" id="title" name="title" class="form-control form-control-lg" value="{{ job.title if job else '' }}" placeholder="e.g. Senior Backend Developer" required>
+            </div>
+
+            <div class="col-12">
+                <label for="description" class="form-label">Description</label>
+                <textarea id="description" name="description" rows="6" class="form-control" placeholder="Describe the role, responsibilities, and expectations.">{{ job.description if job else '' }}</textarea>
+            </div>
+
+            <div class="col-md-6">
+                <label for="skills" class="form-label">Skills</label>
+                <input type="text" id="skills" name="skills" class="form-control" value="{{ job.skills if job else '' }}" placeholder="Python, SQL, React">
+                <div class="form-text">Separate skills with commas.</div>
+            </div>
+
+            <div class="col-md-6">
+                <label for="experience_level" class="form-label">Experience Level</label>
+                <input type="text" id="experience_level" name="experience_level" class="form-control" value="{{ job.experience_level if job else '' }}" placeholder="Junior, Mid, Senior">
+            </div>
+
+            <div class="col-md-6">
+                <label for="deadline" class="form-label">Deadline</label>
+                <input
+                    type="datetime-local"
+                    id="deadline"
+                    name="deadline"
+                    class="form-control"
+                    value="{% if job and job.deadline %}{{ job.deadline.strftime('%Y-%m-%dT%H:%M') }}{% endif %}"
+                >
+                {% if job and job.deadline %}
+                    <div class="form-text">Current deadline: {{ job.deadline }}</div>
+                {% endif %}
+            </div>
+
+            <div class="col-md-6 d-flex align-items-end">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="ai_enabled" name="ai_enabled" {% if job and job.ai_enabled %}checked{% endif %}>
+                    <label class="form-check-label" for="ai_enabled">AI Enabled</label>
+                    <div class="form-text">Mark if AI tools are part of the hiring workflow.</div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-save me-1"></i> {{ submit_text }}
+                </button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

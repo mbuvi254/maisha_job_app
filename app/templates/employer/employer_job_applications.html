@@ -1,0 +1,70 @@
+{% extends 'employer/employer_base.html' %}
+{% block page_title %}Job Applications{% endblock %}
+{% block content %}
+    <div class="page-header">
+        <div>
+            <h1 class="fw-bold mb-1">Job Applications</h1>
+            <p class="text-muted">Candidates who applied for this role.</p>
+        </div>
+        <a href="{{ url_for('employer_bp.employer_dashboard') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back
+        </a>
+    </div>
+
+    <div class="portal-card bg-white p-4">
+        {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% else %}
+            <div class="mb-4">
+                <h2 class="h5 fw-bold mb-1">{{ job.title }}</h2>
+                <p class="text-muted mb-0">{{ job.experience_level }}</p>
+            </div>
+
+            {% if applications %}
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Candidate</th>
+                                <th>Status</th>
+                                <th>Score</th>
+                                <th>Interview</th>
+                                <th>Applied On</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for application in applications %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold">{{ application.candidate.first_name if application.candidate else application.user_id }} {{ application.candidate.last_name if application.candidate else '' }}</div>
+                                        <div class="text-muted small">{{ application.candidate.email if application.candidate else '' }}</div>
+                                    </td>
+                                    <td><span class="badge text-bg-primary">{{ application.status }}</span></td>
+                                    <td>{{ application.score }}</td>
+                                    <td>
+                                        {% if application.interview %}
+                                            <div class="fw-semibold">{{ application.interview.status }}</div>
+                                            <div class="text-muted small">{{ application.interview.response_count }} responses</div>
+                                        {% else %}
+                                            <span class="text-muted">No interview</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ application.created_at }}</td>
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <a href="{{ url_for('employer_bp.view_candidate', candidate_id=application.user_id) }}" class="btn btn-sm btn-primary">View Candidate</a>
+                                            <a href="{{ url_for('employer_bp.view_job_application_detail', job_id=job.id, application_id=application.id) }}" class="btn btn-sm btn-outline-dark">Application Details</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5 text-muted">No applications have been submitted for this job yet.</div>
+            {% endif %}
+        {% endif %}
+    </div>
+{% endblock %}

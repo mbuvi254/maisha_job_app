@@ -1,0 +1,304 @@
+{% extends 'jobs/job_base.html' %}
+{% block page_title %}AI Interview{% endblock %}
+{% block content %}
+<div class="container py-5">
+    {% if error %}
+        <div class="alert alert-danger soft-card">{{ error }}</div>
+    {% elif job %}
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="hero-banner p-4 p-lg-5 mb-4">
+                    <div class="row align-items-center g-3">
+                        <div class="col-lg-8">
+                            <span class="job-tag mb-3"><i class="bi bi-robot"></i> AI Interview</span>
+                            <h1 class="display-6 fw-bold mb-2">{{ job.title }}</h1>
+                            <p class="lead mb-0 text-white-75">
+                                Complete a short AI-led interview after applying for this role.
+                            </p>
+                        </div>
+                        <div class="col-lg-4 text-lg-end">
+                            <a href="{{ url_for('jobs_bp.job_detail', job_id=job.id) }}" class="btn btn-light btn-lg">
+                                Back to Job
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                {% if not job.ai_enabled %}
+                    <div class="alert alert-warning soft-card border-0">
+                        AI interview is not enabled for this job yet.
+                    </div>
+                {% endif %}
+
+                <div id="startCard" class="card soft-card border-0 shadow-sm mb-4">
+                    <div class="card-body p-4 p-lg-5">
+                        <h2 class="h4 fw-bold mb-2">Start Interview</h2>
+                        <p class="text-muted mb-4">
+                            Use the email address linked to your candidate account. You must already have applied for this job.
+                        </p>
+                        <form id="startForm" class="row g-3">
+                            <div class="col-12 col-md-8">
+                                <label class="form-label fw-semibold">Candidate Email</label>
+                                <input type="email" id="candidateEmail" class="form-control form-control-lg" placeholder="name@example.com" required>
+                            </div>
+                            <div class="col-12 col-md-4 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary btn-lg w-100" id="startBtn" {% if not job.ai_enabled %}disabled{% endif %}>
+                                    Start Interview
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="interviewCard" class="card soft-card border-0 shadow-sm mb-4 d-none">
+                    <div class="card-body p-4 p-lg-5">
+                        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+                            <div>
+                                <span class="job-tag mb-2"><i class="bi bi-chat-left-text"></i> Question</span>
+                                <h2 class="h4 fw-bold mb-0" id="questionHeader">Question 1</h2>
+                            </div>
+                            <div class="text-muted small">
+                                <span id="progressText">0 / 5 answered</span>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info border-0 mb-4" id="questionBox">
+                            Your question will appear here.
+                        </div>
+
+                        <form id="answerForm">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Your Answer</label>
+                                <textarea id="answerText" class="form-control" rows="6" placeholder="Type your answer here..." required></textarea>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="submit" class="btn btn-primary" id="answerBtn">Submit Answer</button>
+                                <button type="button" class="btn btn-outline-primary d-none" id="nextBtn">Next Question</button>
+                                <button type="button" class="btn btn-success d-none" id="finishBtn">Finish Interview</button>
+                            </div>
+                        </form>
+
+                        <div id="feedbackBox" class="mt-4 d-none">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body">
+                                    <h3 class="h6 fw-bold mb-2">Feedback</h3>
+                                    <div class="mb-2"><strong>Score:</strong> <span id="scoreValue">0</span></div>
+                                    <p class="mb-0 text-muted" id="feedbackText"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="resultCard" class="card soft-card border-0 shadow-sm d-none">
+                    <div class="card-body p-4 p-lg-5">
+                        <span class="job-tag mb-3"><i class="bi bi-trophy"></i> Interview Complete</span>
+                        <h2 class="h4 fw-bold mb-3">Your Results</h2>
+                        <p class="mb-2"><strong>Total Score:</strong> <span id="totalScore">0</span></p>
+                        <p class="mb-2"><strong>Average Score:</strong> <span id="averageScore">0</span></p>
+                        <p class="mb-0"><strong>Responses:</strong> <span id="responsesCount">0</span></p>
+                    </div>
+                </div>
+
+                <div id="alertBox"></div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+(() => {
+    const startUrl = "{{ url_for('jobs_bp.job_interview_start', job_id=job.id) }}";
+    const questionUrl = (interviewId) => "{{ url_for('jobs_bp.job_interview_question', job_id=job.id, interview_id='__INTERVIEW__') }}".replace('__INTERVIEW__', interviewId);
+    const answerUrl = (interviewId) => "{{ url_for('jobs_bp.job_interview_answer', job_id=job.id, interview_id='__INTERVIEW__') }}".replace('__INTERVIEW__', interviewId);
+    const finishUrl = (interviewId) => "{{ url_for('jobs_bp.job_interview_finish', job_id=job.id, interview_id='__INTERVIEW__') }}".replace('__INTERVIEW__', interviewId);
+
+    const startCard = document.getElementById('startCard');
+    const interviewCard = document.getElementById('interviewCard');
+    const resultCard = document.getElementById('resultCard');
+    const alertBox = document.getElementById('alertBox');
+    const startForm = document.getElementById('startForm');
+    const answerForm = document.getElementById('answerForm');
+    const startBtn = document.getElementById('startBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const finishBtn = document.getElementById('finishBtn');
+    const answerBtn = document.getElementById('answerBtn');
+    const questionBox = document.getElementById('questionBox');
+    const questionHeader = document.getElementById('questionHeader');
+    const progressText = document.getElementById('progressText');
+    const answerText = document.getElementById('answerText');
+    const feedbackBox = document.getElementById('feedbackBox');
+    const scoreValue = document.getElementById('scoreValue');
+    const feedbackText = document.getElementById('feedbackText');
+    const totalScore = document.getElementById('totalScore');
+    const averageScore = document.getElementById('averageScore');
+    const responsesCount = document.getElementById('responsesCount');
+
+    let interviewId = null;
+    let currentQuestion = '';
+    let questionNumber = 0;
+    let questionLimit = 5;
+
+    const showAlert = (type, message) => {
+        alertBox.innerHTML = `<div class="alert alert-${type} soft-card border-0 mt-3">${message}</div>`;
+    };
+
+    const clearAlert = () => {
+        alertBox.innerHTML = '';
+    };
+
+    const setQuestion = (payload) => {
+        currentQuestion = payload.question;
+        questionNumber = payload.question_number || (questionNumber + 1);
+        questionLimit = payload.question_limit || questionLimit;
+        questionBox.textContent = currentQuestion;
+        questionHeader.textContent = `Question ${questionNumber}`;
+        progressText.textContent = `${Math.min(questionNumber - 1, questionLimit)} / ${questionLimit} answered`;
+        answerText.value = '';
+        feedbackBox.classList.add('d-none');
+        nextBtn.classList.add('d-none');
+        finishBtn.classList.add('d-none');
+        answerBtn.disabled = false;
+    };
+
+    const loadNextQuestion = async () => {
+        const response = await fetch(questionUrl(interviewId), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question_number: questionNumber + 1 })
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+            throw new Error(payload.error || 'Unable to load next question');
+        }
+        if (payload.finished) {
+            await completeInterview();
+            return;
+        }
+        setQuestion(payload);
+    };
+
+    const completeInterview = async () => {
+        const response = await fetch(finishUrl(interviewId), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ interview_id: interviewId })
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+            throw new Error(payload.error || 'Unable to finish interview');
+        }
+        interviewCard.classList.add('d-none');
+        resultCard.classList.remove('d-none');
+        totalScore.textContent = payload.total_score;
+        averageScore.textContent = payload.average_score;
+        responsesCount.textContent = payload.responses;
+        showAlert('success', payload.message || 'Interview completed successfully.');
+    };
+
+    startForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        clearAlert();
+        const email = document.getElementById('candidateEmail').value.trim();
+        if (!email) {
+            showAlert('danger', 'Please enter the email on your candidate account.');
+            return;
+        }
+
+        startBtn.disabled = true;
+        startBtn.textContent = 'Starting...';
+
+        try {
+            const response = await fetch(startUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const payload = await response.json();
+            if (!response.ok) {
+                throw new Error(payload.error || 'Unable to start interview');
+            }
+
+            interviewId = payload.interview_id;
+            startCard.classList.add('d-none');
+            interviewCard.classList.remove('d-none');
+            setQuestion(payload);
+            showAlert('success', 'Interview started successfully. Answer each question carefully.');
+        } catch (error) {
+            showAlert('danger', error.message);
+        } finally {
+            startBtn.disabled = false;
+            startBtn.textContent = 'Start Interview';
+        }
+    });
+
+    answerForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        clearAlert();
+        if (!interviewId) {
+            showAlert('danger', 'Please start the interview first.');
+            return;
+        }
+
+        const answer = answerText.value.trim();
+        if (!answer) {
+            showAlert('danger', 'Please type an answer before submitting.');
+            return;
+        }
+
+        answerBtn.disabled = true;
+        answerBtn.textContent = 'Checking...';
+
+        try {
+            const response = await fetch(answerUrl(interviewId), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    question: currentQuestion,
+                    answer: answer
+                })
+            });
+            const payload = await response.json();
+            if (!response.ok) {
+                throw new Error(payload.error || 'Unable to evaluate answer');
+            }
+
+            scoreValue.textContent = payload.score;
+            feedbackText.textContent = payload.feedback;
+            feedbackBox.classList.remove('d-none');
+            progressText.textContent = `${questionNumber} / ${questionLimit} answered`;
+
+            if (questionNumber >= questionLimit) {
+                finishBtn.classList.remove('d-none');
+            } else {
+                nextBtn.classList.remove('d-none');
+            }
+            showAlert('info', 'Answer submitted. Review the feedback, then continue to the next question.');
+        } catch (error) {
+            showAlert('danger', error.message);
+        } finally {
+            answerBtn.disabled = false;
+            answerBtn.textContent = 'Submit Answer';
+        }
+    });
+
+    nextBtn.addEventListener('click', async () => {
+        clearAlert();
+        try {
+            await loadNextQuestion();
+        } catch (error) {
+            showAlert('danger', error.message);
+        }
+    });
+
+    finishBtn.addEventListener('click', async () => {
+        clearAlert();
+        try {
+            await completeInterview();
+        } catch (error) {
+            showAlert('danger', error.message);
+        }
+    });
+})();
+</script>
+{% endblock %}

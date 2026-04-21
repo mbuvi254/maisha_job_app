@@ -1,0 +1,56 @@
+{% extends 'jobs/job_base.html' %}
+{% block page_title %}Job Detail{% endblock %}
+{% block content %}
+<div class="container py-5">
+    {% if error %}
+        <div class="alert alert-danger soft-card">{{ error }}</div>
+    {% elif job %}
+        <div class="hero-banner p-4 p-lg-5 mb-4">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-8">
+                    <span class="job-tag mb-3"><i class="bi bi-briefcase"></i> Job Detail</span>
+                    <h1 class="display-6 fw-bold mb-2">{{ job.title }}</h1>
+                    <p class="lead mb-0 text-white-75">{{ job.experience_level }}</p>
+                </div>
+                <div class="col-lg-4 text-lg-end">
+                    <div class="d-grid gap-2 d-lg-flex justify-content-lg-end">
+                        {% if job.ai_enabled %}
+                        <a href="{{ url_for('jobs_bp.job_interview', job_id=job.id) }}" class="btn btn-outline-warning btn-lg">
+                            AI Interview
+                        </a>
+                        {% endif %}
+                        <a href="{{ url_for('jobs_bp.job_easy_apply', job_id=job.id) }}" class="btn btn-outline-light btn-lg">
+                            Easy Apply
+                        </a>
+                        <a href="{{ url_for('jobs_bp.job_apply', job_id=job.id) }}" class="btn btn-light btn-lg">
+                            Apply Now
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card soft-card border-0 h-100">
+                    <div class="card-body p-4 p-lg-5">
+                        <h2 class="h5 fw-bold mb-3">Description</h2>
+                        <p class="mb-0 text-muted">{{ job.description or 'No description provided.' }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card soft-card border-0 h-100">
+                    <div class="card-body p-4 p-lg-5">
+                        <h2 class="h5 fw-bold mb-3">Quick Facts</h2>
+                        <div class="mb-3"><strong>Skills:</strong> {{ job.skills or 'N/A' }}</div>
+                        <div class="mb-3"><strong>Deadline:</strong> {{ job.deadline or 'N/A' }}</div>
+                        <div class="mb-3"><strong>AI Enabled:</strong> {{ 'Yes' if job.ai_enabled else 'No' }}</div>
+                        <div><strong>Job ID:</strong> {{ job.id }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

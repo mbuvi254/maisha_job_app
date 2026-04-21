@@ -1,0 +1,53 @@
+{% extends 'jobs/job_base.html' %}
+{% block page_title %}Easy Apply{% endblock %}
+{% block content %}
+<div class="container py-5">
+    {% if error %}
+        <div class="alert alert-danger soft-card">{{ error }}</div>
+    {% elif job %}
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card soft-card border-0 shadow-sm">
+                    <div class="card-body p-4 p-lg-5">
+                        <div class="mb-4">
+                            <span class="job-tag mb-3"><i class="bi bi-lightning-charge"></i> Easy Apply</span>
+                            <h1 class="h3 fw-bold mb-2">{{ job.title }}</h1>
+                            <p class="text-muted mb-0">
+                                Use your candidate account email to submit this application in one step.
+                            </p>
+                        </div>
+
+                        <form method="POST" class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Candidate Email</label>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    class="form-control form-control-lg"
+                                    placeholder="Enter the email on your candidate account"
+                                    required
+                                >
+                                <div class="form-text">
+                                    If an account exists for this email, we will submit the application immediately.
+                                </div>
+                            </div>
+
+                            <div class="col-12 d-flex flex-wrap gap-2 pt-2">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    Submit Easy Apply
+                                </button>
+                                <a href="{{ url_for('jobs_bp.job_detail', job_id=job.id) }}" class="btn btn-outline-secondary btn-lg">
+                                    Back to Job
+                                </a>
+                                <a href="{{ url_for('jobs_bp.job_apply', job_id=job.id) }}" class="btn btn-link btn-lg text-decoration-none">
+                                    Use manual application instead
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

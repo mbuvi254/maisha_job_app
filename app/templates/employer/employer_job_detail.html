@@ -1,0 +1,48 @@
+{% extends 'employer/employer_base.html' %}
+{% block page_title %}Job Detail{% endblock %}
+{% block content %}
+    <div class="page-header">
+        <div>
+            <h1 class="fw-bold mb-1">Job Detail</h1>
+            <p class="text-muted">Review the full job posting.</p>
+        </div>
+        <a href="{{ url_for('employer_bp.employer_dashboard') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back
+        </a>
+    </div>
+
+    <div class="portal-card bg-white p-4 p-lg-5">
+        {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% elif job %}
+            <div class="d-flex justify-content-between align-items-start gap-3 mb-4">
+                <div>
+                    <h2 class="h3 mb-1">{{ job.title }}</h2>
+                    <p class="text-muted mb-0">{{ job.experience_level }}</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('employer_bp.edit_job', job_id=job.id) }}" class="btn btn-primary">Edit</a>
+                    <a href="{{ url_for('employer_bp.add_job') }}" class="btn btn-outline-primary">New Job</a>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <div class="metric-card p-4 h-100">
+                        <div class="text-muted small text-uppercase mb-2">Description</div>
+                        <div>{{ job.description or 'No description provided.' }}</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="metric-card p-4 h-100">
+                        <div class="text-muted small text-uppercase mb-2">Details</div>
+                        <div class="mb-2"><strong>Skills:</strong> {{ job.skills or 'N/A' }}</div>
+                        <div class="mb-2"><strong>Deadline:</strong> {{ job.deadline or 'N/A' }}</div>
+                        <div class="mb-2"><strong>AI:</strong> {{ 'Enabled' if job.ai_enabled else 'Disabled' }}</div>
+                        <div><strong>Job ID:</strong> {{ job.id }}</div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

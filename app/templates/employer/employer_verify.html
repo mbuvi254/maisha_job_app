@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top left, rgba(56, 189, 248, 0.35), transparent 28%),
+                radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.25), transparent 30%),
+                linear-gradient(160deg, #0f172a 0%, #111827 48%, #020617 100%);
+        }
+
+        .verify-shell {
+            min-height: 100vh;
+        }
+
+        .verify-card {
+            border: 0;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.3);
+        }
+
+        .verify-panel {
+            background: linear-gradient(165deg, rgba(14, 165, 233, 0.96), rgba(15, 23, 42, 0.98));
+            color: #fff;
+        }
+
+        .step-chip {
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 999px;
+            padding: 0.35rem 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            font-size: 0.875rem;
+        }
+
+        .otp-input {
+            letter-spacing: 0.35rem;
+            text-align: center;
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div class="container verify-shell d-flex align-items-center justify-content-center py-5">
+        <div class="row w-100 justify-content-center">
+            <div class="col-12 col-lg-10 col-xxl-9">
+                <div class="card verify-card">
+                    <div class="row g-0">
+                        <div class="col-lg-5 verify-panel p-4 p-lg-5 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-inline-flex align-items-center gap-2 mb-4">
+                                    <div class="rounded-circle bg-white text-primary d-inline-flex align-items-center justify-content-center" style="width: 2.75rem; height: 2.75rem;">
+                                        <i class="bi bi-shield-lock"></i>
+                                    </div>
+                                    <strong>Employer Portal</strong>
+                                </div>
+
+                                <div class="step-chip mb-3"><i class="bi bi-envelope-check"></i> OTP verification</div>
+                                <h1 class="fw-bold mb-3">Enter your code to continue.</h1>
+                                <p class="text-white-75 mb-4">
+                                    We sent a 6-digit verification code to your email. Enter it below to activate your account and access the dashboard.
+                                </p>
+
+                                <div class="d-grid gap-2">
+                                    <div class="step-chip"><i class="bi bi-1-circle"></i> Open your email</div>
+                                    <div class="step-chip"><i class="bi bi-2-circle"></i> Copy the OTP</div>
+                                    <div class="step-chip"><i class="bi bi-3-circle"></i> Submit below</div>
+                                </div>
+                            </div>
+                            <div class="mt-4 small text-white-50">
+                                Didn’t receive it? You can request a new code from the right side.
+                            </div>
+                        </div>
+
+                        <div class="col-lg-7 bg-white p-4 p-lg-5">
+                            <h2 class="h3 fw-bold mb-2">Verify your account</h2>
+                            <p class="text-muted mb-4">Enter the 6-digit OTP to finish login or registration.</p>
+
+                            {% with messages = get_flashed_messages(with_categories=true) %}
+                                {% if messages %}
+                                    {% for category, message in messages %}
+                                        <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }}">{{ message }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endwith %}
+
+                            {% if error %}
+                                <div class="alert alert-danger">{{ error }}</div>
+                            {% endif %}
+                            {% if success %}
+                                <div class="alert alert-success">{{ success }}</div>
+                            {% endif %}
+
+                            <form method="POST" action="{{ url_for('employer_bp.verify_employer') }}" class="vstack gap-3">
+                                <div>
+                                    <label for="otp" class="form-label">Verification Code</label>
+                                    <input
+                                        type="text"
+                                        name="otp"
+                                        id="otp"
+                                        class="form-control form-control-lg otp-input"
+                                        placeholder="000000"
+                                        inputmode="numeric"
+                                        maxlength="6"
+                                        autocomplete="one-time-code"
+                                        required
+                                    >
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-check2-circle me-1"></i> Verify & Continue
+                                </button>
+                            </form>
+
+                            <div class="d-flex flex-column flex-sm-row gap-2 mt-4">
+                                <a href="{{ url_for('employer_bp.resend_employer_otp') }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-clockwise me-1"></i> Resend OTP
+                                </a>
+                                <a href="{{ url_for('employer_bp.login_employer') }}" class="btn btn-outline-dark">
+                                    <i class="bi bi-arrow-left me-1"></i> Back to Login
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

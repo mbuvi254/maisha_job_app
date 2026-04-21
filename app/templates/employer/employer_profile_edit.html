@@ -1,0 +1,43 @@
+{% extends 'employer/employer_base.html' %}
+{% block page_title %}Edit Profile{% endblock %}
+{% block content %}
+    <div class="page-header">
+        <div>
+            <h1 class="fw-bold mb-1">Edit Profile</h1>
+            <p class="text-muted">Update your employer account details.</p>
+        </div>
+        <a href="{{ url_for('employer_bp.employer_profile') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back
+        </a>
+    </div>
+
+    <div class="portal-card bg-white p-4 p-lg-5">
+        {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('employer_bp.edit_employer_profile') }}" class="row g-4">
+            <div class="col-md-6">
+                <label for="firstName" class="form-label">First Name</label>
+                <input type="text" id="firstName" name="firstName" class="form-control form-control-lg" value="{{ employer.firstName }}" required>
+            </div>
+            <div class="col-md-6">
+                <label for="lastName" class="form-label">Last Name</label>
+                <input type="text" id="lastName" name="lastName" class="form-control form-control-lg" value="{{ employer.lastName }}">
+            </div>
+            <div class="col-12">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" id="email" name="email" class="form-control form-control-lg" value="{{ employer.email }}" required>
+            </div>
+            <div class="col-12">
+                <label for="phone" class="form-label">Phone Number</label>
+                <input type="tel" id="phone" name="phone" class="form-control form-control-lg" value="{{ employer.phone }}">
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-check2-circle me-1"></i> Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+{% endblock %}
