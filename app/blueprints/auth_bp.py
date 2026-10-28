@@ -143,10 +143,21 @@ def verify(role):
         return page(role, verifying=True, error='Verification is temporarily unavailable. Please request a new code and try again.'), 503
     target = safe_next(session.get(f'{role}_next_url')) or url_for(ENDPOINTS[role][3])
     # Rotate authentication state; one active role per browser prevents role confusion.
+    cv_transfer_failed = False
+    guest_token = session.get('guest_resume_token')
+    if role == 'candidate' and guest_token:
+        from app.services.site_activity_service import claim_guest
+        try:
+            claim_guest(guest_token, user['id'])
+        except Exception:
+            current_app.logger.exception('Guest CV transfer failed')
+            cv_transfer_failed = True
     session.clear()
     session.permanent = True
     session[f'{role}_id'] = user['id']
     session[f'{role}_email'] = pending['email']
+    if cv_transfer_failed:
+        flash('Signed in. Please upload your CV again to save it to your profile.', 'warning')
     return redirect(target)
 
 
@@ -213,4 +224,44 @@ def auth_context():
 def prevent_auth_caching(response):
     if request.path.startswith(('/admin', '/employers', '/candidates')) or any(session.get(f'{role}_id') for role in ENDPOINTS):
         response.headers['Cache-Control'] = 'no-store'
+    return response
+
+
+@admin_bp.get('/data/<kind>')
+def data_directory(kind):
+    if not session.get('admin_id') or session.get('admin_email') not in current_app.config['ADMIN_EMAILS']:
+        abort(403)
+    from app.services.admin_service import DIRECTORIES, get_directory
+    if kind not in DIRECTORIES:
+        abort(404)
+    page_number = max(1, request.args.get('page', 1, type=int))
+    return render_template('admin/directory.html', directory=get_directory(kind, page_number, request.args.get('q', '')[:200]))
+
+
+@admin_bp.get('/analytics')
+def analytics():
+    if not session.get('admin_id') or session.get('admin_email') not in current_app.config['ADMIN_EMAILS']:
+        abort(403)
+    from app.services.admin_service import get_growth
+    from app.services.site_activity_service import activity_summary
+    try:
+        return dict(growth=get_growth(), website=activity_summary())
+    except Exception:
+        current_app.logger.exception('Analytics unavailable')
+        return {'error': 'Analytics are temporarily unavailable.'}, 503
+
+
+@admin_bp.get('/resumes/<candidate_id>')
+def admin_resume(candidate_id):
+    if not session.get('admin_id') or session.get('admin_email') not in current_app.config['ADMIN_EMAILS']:
+        abort(403)
+    from app.services.candidate_service import get_candidate_by_id
+    from app.services.candidate_resume_service import cv_directory
+    from flask import send_from_directory
+    candidate = get_candidate_by_id(candidate_id)
+    if not candidate or not candidate.get('cv_filename'):
+        abort(404)
+    response = send_from_directory(cv_directory(), candidate['cv_filename'], as_attachment=True,
+                                   download_name=candidate.get('cv_name') or 'resume.pdf')
+    response.headers['Cache-Control'] = 'private, no-store'
     return response

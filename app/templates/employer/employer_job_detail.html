@@ -62,7 +62,7 @@
                             ('salary_insight', 'Salary insight')
                         ] %}
                         <h3 class="h6 mt-4 mb-2">{{ label }}</h3>
-                        <div style="white-space: pre-wrap; overflow-wrap: anywhere">{{ job.get(field) or 'Not provided.' }}</div>
+                        <div style="white-space: pre-wrap; overflow-wrap: anywhere">{{ (job.get(field) or 'Not provided.')|job_html }}</div>
                         {% endfor %}
                     </div>
                 </div>

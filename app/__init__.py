@@ -21,8 +21,15 @@ app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
     SESSION_COOKIE_SECURE=os.getenv("SESSION_COOKIE_SECURE", "false").lower() == "true",
-    PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
+    PERMANENT_SESSION_LIFETIME=timedelta(days=int(os.getenv("SESSION_LIFETIME_DAYS", "365"))),
 )
 mail = Mail(app)
 from .blueprints import register_blueprints
 register_blueprints(app)
+
+from app.services.site_activity_service import install_activity
+install_activity(app)
+
+from app.services.job_content_service import render_job_html, editor_job_html
+app.add_template_filter(render_job_html, 'job_html')
+app.add_template_filter(editor_job_html, 'job_editor_html')

@@ -26,12 +26,12 @@ class NavigationTests(unittest.TestCase):
     def test_guest_match_page_and_candidate_destination(self):
         response = self.client.get('/job-match')
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Sign in &amp; upload your CV', response.data)
+        self.assertIn(b'Upload &amp; find matches', response.data)
         with self.client.session_transaction() as session:
             session['candidate_id'] = 'candidate'
         response = self.client.get('/job-match')
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(response.location.endswith('/candidates/profile?view=matches#job-matches'))
+        self.assertTrue(response.location.endswith('/candidates/matches'))
 
     def test_empty_categories_page_is_usable(self):
         with patch('app.blueprints.jobs_bp.get_grouped_categories', return_value=[]), patch(

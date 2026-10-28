@@ -6,6 +6,7 @@ import zipfile
 from xml.etree import ElementTree
 
 from flask import current_app
+from app.services.job_content_service import plain_job_text
 from werkzeug.utils import secure_filename
 
 MAX_CV_BYTES = 5 * 1024 * 1024
@@ -73,7 +74,7 @@ def match_open_jobs(cv_text, jobs, applied_job_ids=(), limit=6):
             continue
         skills = [skill.strip() for skill in str(job.get('skills') or '').split(',') if skill.strip()]
         matched_skills = [skill for skill in skills if _terms(skill) and _terms(skill) <= resume_terms]
-        role_terms = _terms(' '.join(str(job.get(field) or '') for field in ('title', 'description', 'responsibilities', 'requirements', 'who_should_apply')))
+        role_terms = _terms(' '.join(plain_job_text(job.get(field)) for field in ('title', 'description', 'responsibilities', 'requirements', 'who_should_apply')))
         shared = role_terms & resume_terms
         if not matched_skills and len(shared) < 2:
             continue

@@ -42,11 +42,12 @@ class JobPageTests(unittest.TestCase):
             self.assertIn(b'/job-1/apply',response.data)
             self.assertIn(b'Sign in for easy apply',response.data)
 
-    def test_detail_description_is_escaped_and_preserves_lines(self):
+    def test_detail_description_removes_active_html_and_preserves_content(self):
         self.jobs[0]['description']='<script>alert(1)</script>\nSecond paragraph'
         response=self.client.get('/jobs/job-1')
         self.assertNotIn(b'<script>alert(1)</script>',response.data)
-        self.assertIn(b'&lt;script&gt;alert(1)&lt;/script&gt;\nSecond paragraph',response.data)
+        self.assertNotIn(b'alert(1)',response.data)
+        self.assertIn(b'Second paragraph',response.data)
 
     def test_applied_candidate_sees_status_instead_of_apply(self):
         with self.client.session_transaction() as session:session['candidate_id']='candidate-1'

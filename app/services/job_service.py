@@ -1,4 +1,5 @@
 from app.repository.job_repository import JobRepository
+from app.services.job_content_service import clean_job_data
 
 
 repo = JobRepository()
@@ -21,7 +22,7 @@ def create_job(data):
         if not data.get(field):
             return {"error": f"{field} is required"}, 400
 
-    job_id = repo.insert(data)
+    job_id = repo.insert(clean_job_data(data))
     return {
         "message": "Job created",
         "id": job_id
@@ -34,7 +35,7 @@ def update_job(job_id, data):
         if not data.get(field):
             return {"error": f"{field} is required"}, 400
 
-    updated = repo.update(job_id, data)
+    updated = repo.update(job_id, clean_job_data(data))
     if not updated:
         return {"error": "Job not found"}, 404
 

@@ -1,4 +1,4 @@
 {% for endpoint, label in [('jobs_bp.index', 'Home'), ('jobs_bp.browse_jobs', 'Browse Jobs'), ('jobs_bp.categories', 'Categories'), ('jobs_bp.job_match', 'AI Job Match')] %}
-{% set active = request.endpoint == endpoint or (endpoint == 'jobs_bp.job_match' and request.endpoint == 'candidate_bp.candidate_profile' and request.args.get('view') == 'matches') %}
+{% set active = request.endpoint == endpoint or (endpoint == 'jobs_bp.job_match' and request.endpoint == 'candidate_bp.resume_matches') or (endpoint == 'jobs_bp.job_match' and request.endpoint == 'candidate_bp.candidate_profile' and request.args.get('view') == 'matches') %}
 <a class="primary-nav-link {{ 'active' if active else '' }} {{ 'match-nav-link' if endpoint == 'jobs_bp.job_match' else '' }}" href="{{ url_for(endpoint) }}" {% if active %}aria-current="page"{% endif %}>{% if endpoint == 'jobs_bp.job_match' %}<i class="bi bi-stars"></i>{% endif %}{{ label }}</a>
 {% endfor %}

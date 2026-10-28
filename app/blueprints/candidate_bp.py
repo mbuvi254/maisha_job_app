@@ -226,6 +226,8 @@ def upload_cv():
     except Exception:
         (cv_directory() / data['cv_filename']).unlink(missing_ok=True)
         raise
+    from app.services.site_activity_service import record_upload
+    record_upload()
     # Do not remove previous CVs: submitted applications may reference earlier versions.
     flash('CV uploaded. Your job matches have been refreshed.', 'success')
     return redirect(url_for('candidate_bp.candidate_profile') + '#job-matches')
@@ -270,3 +272,50 @@ def retry_feedback(application_id, response_id):
         except Exception:
             flash("Your answer remains saved. AI feedback is still unavailable; please check again later.", "info")
     return redirect(url_for("candidate_bp.application_detail", application_id=application_id))
+
+
+@candidate_bp.route('/matches', methods=['GET', 'POST'])
+def resume_matches():
+    from app.blueprints.auth_bp import check_csrf
+    from app.services.site_activity_service import guest_resume, save_guest
+    candidate = _candidate_from_session() if _candidate_is_logged_in() else None
+    data = candidate if candidate else guest_resume(session.get('guest_resume_token'))
+    if request.method == 'POST':
+        check_csrf()
+        import time
+        if time.time() - session.get('last_resume_upload', 0) < 60:
+            flash('Please wait a minute before uploading another resume.', 'warning')
+            return redirect(url_for('candidate_bp.resume_matches'))
+        upload = request.files.get('cv')
+        try:
+            if not upload or not upload.filename:
+                raise ValueError('Choose a PDF or DOCX resume.')
+            saved = save_profile_cv(upload)
+            try:
+                if candidate:
+                    update_candidate_cv(candidate['id'], saved)
+
+                else:
+                    session['guest_resume_token'] = save_guest(saved)
+                    session.permanent = True
+            except Exception:
+                (cv_directory() / saved['cv_filename']).unlink(missing_ok=True)
+                raise
+            session['last_resume_upload'] = time.time()
+            if candidate:
+                from app.services.site_activity_service import record_upload
+                record_upload()
+            return redirect(url_for('candidate_bp.resume_matches'))
+        except ValueError as exc:
+            flash(str(exc), 'danger')
+    matches = match_open_jobs(data.get('cv_text', ''), get_all_jobs(hide_expired=True), limit=None) if data else []
+    return render_template('candidate/resume_matches.html', resume=data, matches=matches)
+
+
+@candidate_bp.get('/matches/preview')
+def match_preview():
+    if not _candidate_is_logged_in():
+        abort(401)
+    candidate = _candidate_from_session()
+    matches = match_open_jobs(candidate.get('cv_text', ''), get_all_jobs(hide_expired=True), limit=3) if candidate and candidate.get('cv_text') else []
+    return render_template('candidate/_match_preview.html', matches=matches, has_cv=bool(candidate and candidate.get('cv_text')))

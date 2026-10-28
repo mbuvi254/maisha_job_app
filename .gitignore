@@ -23,3 +23,7 @@ app/static/resumes/
 # Archives/build artifacts
 *.zip
 .codex/
+
+# Private resumes and local analytics
+app/private/
+instance/

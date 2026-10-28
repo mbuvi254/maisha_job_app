@@ -758,5 +758,6 @@ def categories():
 @jobs_bp.get('/job-match')
 def job_match():
     if session.get('candidate_id'):
-        return redirect(url_for('candidate_bp.candidate_profile', view='matches') + '#job-matches')
-    return render_template('jobs/job_match.html')
+        return redirect(url_for('candidate_bp.resume_matches'))
+    from app.blueprints.candidate_bp import resume_matches
+    return resume_matches()

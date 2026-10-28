@@ -225,3 +225,15 @@ The default model order is `openai/gpt-4o-mini,openai/gpt-4.1-mini`, configurabl
 with `OPENROUTER_MODEL` or comma-separated `OPENROUTER_MODELS`. A failed request
 tries the next configured model. Model availability or account limits can still
 delay evaluation, while saved answers remain available.
+
+### Admin analytics, guest resumes and persistent sign-in
+
+- `/admin/dashboard` includes 30-day charts, searchable paginated directories, private profile CV downloads, and the latest website request logs. `/admin/data/candidates`, `/admin/data/employers`, `/admin/data/jobs`, `/admin/data/resumes`, and `/admin/data/applications` require an authenticated allowlisted administrator.
+- Registration and job charts use existing database creation dates. Profile resume charts use the most recent CV upload date on each candidate; they do not reconstruct replaced CVs. Upload event charts begin with this release. Request logs exclude static assets and admin pages and retain 90 days of route patterns, method, status, duration, and role. No query strings, form values, IP addresses or OTPs are stored. Dates in request logs and upload events are UTC.
+- Activity and temporary guest metadata are stored in `instance/activity.sqlite3`. Keep this directory writable and persistent alongside the application's MySQL database and `app/private/candidate_resumes`. All workers on one server must share these paths. Multi-server hosting requires shared storage or migration of activity/guest state to the shared database.
+- `/candidates/matches` accepts private PDF/DOCX resumes up to 5 MB without login. A random token in the signed session identifies the guest resume; resume text is never put in cookies. Guest access expires after 24 hours; expired guest files are removed on subsequent guest uploads. Signing in or completing registration transfers the guest CV to the candidate profile. Guest matching is based on shared terms and skills, not a hiring decision.
+- Candidate pages show a matches panel. Successful sign-in creates a persistent cookie renewed on activity, with a default lifetime of 365 days. Set `SESSION_LIFETIME_DAYS` to change it. Sign-out and clearing cookies still end access; keep `FLASK_SECRET_KEY` stable across restarts. Use `SESSION_COOKIE_SECURE=true` when serving over HTTPS.
+
+### Employer job editor
+
+Add Job and Edit Job use Summernote Lite 0.9.0 for the overview, responsibilities, requirements, applicant guidance, and salary sections. The toolbar supports headings, bold/italic/underline, lists, links, rules, undo/redo, and fullscreen. Plain textarea entry remains available if the editor CDN cannot load. Job content is sanitized using `nh3` when saved and displayed; scripts, embedded media, styles, event handlers and unsafe link protocols are removed. Existing plain text postings retain line breaks, and matching extracts plain text from formatted postings. Run `pip install -r requirements.txt` before restarting after this update.

@@ -1,0 +1,3 @@
+<h2 class="h6">Recommended for you</h2>
+{% for match in matches %}<a class="d-block mb-2" href="{{ url_for('jobs_bp.job_detail', job_id=match.job.id) }}">{{ match.job.title }} <small>{{ match.match_score }}% overlap</small></a>{% else %}<p class="small">{{ 'New matches will appear as jobs are posted.' if has_cv else 'Upload your resume to unlock your matches.' }}</p>{% endfor %}
+<a href="{{ url_for('candidate_bp.resume_matches') }}">{{ 'See all matches' if has_cv else 'Upload resume' }}</a>

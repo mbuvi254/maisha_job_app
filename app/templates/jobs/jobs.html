@@ -3,9 +3,9 @@
 {% block content %}
 <section class="discovery-hero">
     <div class="live-pill"><span class="status-dot"></span> {{ jobs|length }} {{ 'matching opportunities' if search_query or selected_industry_id or selected_category_id or selected_experience_level else 'opportunities to explore' }}</div>
-    <h1>Your skills. Your ambition.<br><span>Your next opportunity.</span></h1>
-    <p class="hero-copy">Find work that moves you forward. Explore roles across industries, discover what fits, and take your next step with confidence.</p>
-    <div class="hero-actions"><a href="{{ url_for('jobs_bp.browse_jobs') }}" class="btn btn-primary">Explore opportunities <i class="bi bi-arrow-right ms-2"></i></a><a href="{{ url_for('employer_bp.login_employer') }}" class="btn btn-outline-primary">Find your next hire</a></div>
+    <h1>Find roles that<br><span>fit your experience.</span></h1>
+    <p class="hero-copy">Upload your resume to discover jobs that share your skills, or search open roles directly.</p>
+    <div class="hero-actions"><a href="{{ url_for('candidate_bp.resume_matches') }}" class="btn btn-primary">Upload resume to see matches <i class="bi bi-arrow-right ms-2"></i></a><a href="{{ url_for('employer_bp.login_employer') }}" class="btn btn-outline-primary">Find your next hire</a></div>
     <div class="hero-trust"><span><i class="bi bi-check-circle"></i> Browse without an account</span><span><i class="bi bi-check-circle"></i> Apply with your profile</span><span><i class="bi bi-check-circle"></i> Track your progress</span></div>
 </section>
 <div class="container py-5" id="opportunities">

@@ -268,6 +268,10 @@
         {% endwith %}
     </div>
 
+    {% if session.get('candidate_id') %}
+    <aside class="container mt-3"><details class="workspace-panel" open><summary><i class="bi bi-stars"></i> Your job matches — available on every page</summary><div id="persistent-job-matches" class="mt-3" data-url="{{ url_for('candidate_bp.match_preview') }}">Loading matches…</div></details></aside>
+    <script>document.addEventListener('DOMContentLoaded',()=>{const box=document.getElementById('persistent-job-matches');fetch(box.dataset.url).then(r=>{if(!r.ok)throw Error();return r.text()}).then(html=>box.innerHTML=html).catch(()=>{box.textContent='Matches are temporarily unavailable. Open AI Job Match to try again.'})});</script>
+    {% endif %}
     {% block content %}{% endblock %}
     <footer class="site-footer">
         Powered by <a href="https://cybermaisha.co.ke" target="_blank" rel="noopener">Cybermaisha Solutions</a>

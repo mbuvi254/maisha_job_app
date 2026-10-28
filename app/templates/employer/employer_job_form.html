@@ -3,6 +3,8 @@
 {% set submit_text = submit_label or 'Create Job' %}
 {% block page_title %}{{ form_title }}{% endblock %}
 {% block content %}
+<link href="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-lite.min.css" rel="stylesheet">
+<style>.note-editor.note-frame{border:1px solid var(--bs-border-color);border-radius:.65rem;overflow:hidden}.note-editor .note-editable{background:var(--bs-body-bg);color:var(--bs-body-color);line-height:1.7}.note-editor .note-toolbar{background:var(--bs-tertiary-bg);border-bottom:1px solid var(--bs-border-color)}.note-editor .note-btn{background:var(--bs-body-bg);color:var(--bs-body-color)}.note-editor .note-editable:focus{outline:2px solid var(--bs-primary);outline-offset:-2px}.job-rich-content p{margin-bottom:.75rem}</style>
     <div class="page-header">
         <div>
             <h1 class="fw-bold mb-1">{{ form_title }}</h1>
@@ -32,18 +34,18 @@
 
             <div class="col-12">
                 <label for="description" class="form-label">Overview</label>
-                <textarea id="description" name="description" rows="6" class="form-control" placeholder="Introduce the role, its purpose, and your team.">{{ form_data.get('description') if form_data else (job.description if job else '') }}</textarea>
+                <textarea id="description" name="description" rows="6" class="form-control job-rich-editor" placeholder="Introduce the role, its purpose, and your team.">{{ (form_data.get('description') if form_data else (job.description if job else ''))|job_editor_html }}</textarea>
             </div>
 
             {% for field, label, hint in [
-                ('responsibilities', 'What you will do', 'Describe the day-to-day responsibilities and expected outcomes. Use one item per line.'),
-                ('requirements', 'Requirements', 'List the required qualifications, experience, and skills. Use one item per line.'),
+                ('responsibilities', 'What you will do', 'Describe the day-to-day responsibilities and expected outcomes. Use bullet or numbered lists for clarity.'),
+                ('requirements', 'Requirements', 'List the required qualifications, experience, and skills. Use bullet or numbered lists for clarity.'),
                 ('who_should_apply', 'Who should apply', 'Describe the experience and interests that would make someone a good fit.'),
                 ('salary_insight', 'Salary insight', 'Include the currency, range, pay period, benefits, and any flexibility. e.g. KES 100,000–150,000 per month.')
             ] %}
             <div class="col-12">
                 <label for="{{ field }}" class="form-label">{{ label }}</label>
-                <textarea id="{{ field }}" name="{{ field }}" rows="{{ 3 if field == 'salary_insight' else 5 }}" class="form-control" placeholder="{{ hint }}">{{ form_data.get(field, '') if form_data else (job.get(field) or '' if job else '') }}</textarea>
+                <textarea id="{{ field }}" name="{{ field }}" rows="{{ 3 if field == 'salary_insight' else 5 }}" class="form-control job-rich-editor" placeholder="{{ hint }}">{{ (form_data.get(field, '') if form_data else (job.get(field) or '' if job else ''))|job_editor_html }}</textarea>
             </div>
             {% endfor %}
             <div class="col-md-6">
@@ -161,6 +163,9 @@
             </div>
         </form>
     </div>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-lite.min.js" defer></script>
+<script src="{{ url_for('static', filename='js/job-editor.js') }}" defer></script>
 <script id="taxonomy-data" type="application/json">{{ grouped_categories|tojson }}</script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
