@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
+    <title>{{ heading }} · Maisha Jobs</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f3f6f3;color:#163d33;font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%;">
+    <div style="display:none;font-size:1px;line-height:1px;color:#f3f6f3;max-height:0;max-width:0;overflow:hidden;mso-hide:all;">{{ preheader }}</div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f3f6f3;">
+        <tr><td align="center" style="padding:32px 12px;">
+            <!--[if mso]><table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0"><tr><td><![endif]-->
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;border:1px solid #dce5df;border-radius:18px;background-color:#ffffff;">
+                <tr><td style="padding:28px 32px;background-color:#143e33;border-radius:18px 18px 0 0;">
+                    <p style="margin:0;color:#d4edb7;font-size:12px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;">YOUR NEXT OPPORTUNITY</p>
+                    <p style="margin:9px 0 0;color:#ffffff;font-size:26px;font-weight:bold;letter-spacing:-.5px;">Maisha Jobs<span style="color:#d4edb7;">.</span></p>
+                </td></tr>
+                <tr><td style="padding:32px;">
+                    <p style="margin:0 0 14px;color:#467461;font-size:12px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;">{{ eyebrow }}</p>
+                    <h1 style="margin:0 0 20px;font-size:28px;line-height:1.25;color:#143e33;letter-spacing:-.5px;">{{ heading }}</h1>
+                    {% if candidate_name %}<p style="margin:0 0 16px;font-size:16px;line-height:1.7;color:#445b52;">Hi {{ candidate_name }},</p>{% endif %}
+                    <p style="margin:0 0 24px;font-size:16px;line-height:1.7;color:#445b52;">{{ introduction }}{% if job_title %} <strong style="color:#143e33;">{{ job_title }}</strong>.{% endif %}</p>
+                    {% if otp %}
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" style="padding:24px 12px;border:1px solid #dce5df;border-radius:12px;background-color:#f5f8f2;">
+                        <p style="margin:0 0 12px;color:#64776e;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:1.5px;">Your verification code</p>
+                        <p style="margin:0;color:#143e33;font-family:Consolas,'Courier New',monospace;font-size:34px;line-height:1.4;letter-spacing:8px;font-weight:bold;">{{ otp }}</p>
+                        <p style="margin:12px 0 0;color:#64776e;font-size:13px;line-height:1.6;">Valid for 10 minutes · Use the most recent code</p>
+                    </td></tr></table>
+                    <p style="margin:24px 0 0;font-size:14px;line-height:1.7;color:#64776e;">Enter this code on the sign-in page. Keep it private; never share it with anyone.</p>
+                    {% else %}
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" bgcolor="#176653" style="border-radius:9px;mso-padding-alt:15px 24px;">
+                        <a href="{{ action_url }}" style="display:inline-block;padding:15px 24px;border:1px solid #176653;border-radius:9px;background-color:#176653;color:#ffffff;text-decoration:none;font-size:16px;font-weight:bold;line-height:1.4;mso-padding-alt:0;">{{ action_label }} &rarr;</a>
+                    </td></tr></table>
+                    <p style="margin:24px 0 0;font-size:14px;line-height:1.7;color:#64776e;">{{ next_step }}</p>
+                    <p style="margin:24px 0 6px;font-size:12px;line-height:1.6;color:#64776e;">If the button does not work, copy this link into your browser:</p>
+                    <p style="margin:0;font-size:12px;line-height:1.8;overflow-wrap:anywhere;word-break:break-all;"><a href="{{ action_url }}" style="color:#176653;text-decoration:underline;">{{ action_url }}</a></p>
+                    {% endif %}
+                </td></tr>
+                <tr><td style="padding:22px 32px;border-top:1px solid #e6ece7;background-color:#fafcf9;border-radius:0 0 18px 18px;">
+                    <p style="margin:0;font-size:13px;line-height:1.7;color:#64776e;">{{ footer_note }}</p>
+                    <p style="margin:12px 0 0;font-size:12px;line-height:1.7;color:#7b8c82;">&copy; {{ year }} Maisha Jobs · Powered by Cybermaisha Solutions</p>
+                </td></tr>
+            </table>
+            <!--[if mso]></td></tr></table><![endif]-->
+        </td></tr>
+    </table>
+</body>
+</html>
