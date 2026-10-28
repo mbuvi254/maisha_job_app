@@ -4,136 +4,142 @@
     <div class="page-header">
         <div>
             <h1 class="fw-bold mb-1">Dashboard</h1>
-            <p class="text-muted">Track your jobs and manage your employer profile from one place.</p>
+            <p class="text-muted">Track activity and keep your workspace anchored in one place.</p>
         </div>
-        <a href="{{ url_for('employer_bp.add_job') }}" class="btn btn-primary btn-lg">
-            <i class="bi bi-plus-lg me-1"></i> New Job
-        </a>
-    </div>
-
-    <div class="row g-3 mb-4">
-        <div class="col-md-4">
-            <div class="metric-card p-4 h-100">
-                <div class="text-muted small text-uppercase">Applicants</div>
-                <div class="fs-4 fw-semibold">{{ applicant_count }}</div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="metric-card p-4 h-100">
-                <div class="text-muted small text-uppercase">Jobs Posted</div>
-                <div class="fs-4 fw-semibold">{{ jobs|length }}</div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="metric-card p-4 h-100">
-                <div class="text-muted small text-uppercase">Applications</div>
-                <div class="fs-4 fw-semibold">{{ applications|length }}</div>
-            </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('employer_bp.employer_jobs') }}" class="btn btn-outline-primary btn-lg">
+                <i class="bi bi-briefcase me-1"></i> Your Jobs
+            </a>
+            <a href="{{ url_for('employer_bp.add_job') }}" class="btn btn-primary btn-lg">
+                <i class="bi bi-plus-lg me-1"></i> New Job
+            </a>
         </div>
     </div>
 
-    <div class="portal-card bg-white p-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h2 class="h5 fw-bold mb-1">Your Jobs</h2>
-                <p class="text-muted mb-0">Recent jobs posted under your account.</p>
-            </div>
-            <span class="badge text-bg-light border">{{ jobs|length }} total</span>
-        </div>
-
-        {% if jobs %}
-            <div class="row g-3">
-                {% for job in jobs %}
-                    <div class="col-md-6 col-xl-4">
-                        <div class="card h-100 border-0 shadow-sm rounded-4">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
-                                    <div>
-                                        <h3 class="h5 mb-1">{{ job.title }}</h3>
-                                        <div class="text-muted small">{{ job.experience_level }}</div>
-                                    </div>
-                                    <div class="d-flex flex-column gap-2 align-items-end">
-                                        {% if job.ai_enabled %}
-                                            <span class="badge text-bg-info">AI</span>
-                                        {% endif %}
-                                        <span class="badge text-bg-light border">Job</span>
-                                    </div>
-                                </div>
-                                <p class="text-muted small mb-3">{{ job.description or 'No description provided.' }}</p>
-                                {% if job.skills %}
-                                    <div class="mb-3">
-                                        <div class="small text-uppercase text-muted mb-1">Skills</div>
-                                        <div class="d-flex flex-wrap gap-2">
-                                            {% for skill in job.skills.split(',') %}
-                                                <span class="badge text-bg-light border">{{ skill.strip() }}</span>
-                                            {% endfor %}
-                                        </div>
-                                    </div>
-                                {% endif %}
-                                {% if job.deadline %}
-                                    <div class="small text-muted">
-                                        <i class="bi bi-calendar-event me-1"></i>
-                                        Deadline: {{ job.deadline }}
-                                    </div>
-                                {% endif %}
-                                <div class="d-flex gap-2 mt-4">
-                                    <a href="{{ url_for('employer_bp.view_job', job_id=job.id) }}" class="btn btn-outline-primary btn-sm">View</a>
-                                    <a href="{{ url_for('employer_bp.edit_job', job_id=job.id) }}" class="btn btn-primary btn-sm">Edit</a>
-                                    <a href="{{ url_for('employer_bp.view_job_applications', job_id=job.id) }}" class="btn btn-outline-secondary btn-sm">Applications</a>
-                                </div>
-                            </div>
-                        </div>
+    <div class="row g-4">
+        <div class="col-12 col-xxl-8">
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="metric-card p-4 h-100">
+                        <div class="text-muted small text-uppercase">Applicants</div>
+                        <div class="fs-4 fw-semibold">{{ applicant_count }}</div>
                     </div>
-                {% endfor %}
+                </div>
+                <div class="col-md-4">
+                    <div class="metric-card p-4 h-100">
+                        <div class="text-muted small text-uppercase">Jobs Posted</div>
+                        <div class="fs-4 fw-semibold">{{ jobs|length }}</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="metric-card p-4 h-100">
+                        <div class="text-muted small text-uppercase">Applications</div>
+                        <div class="fs-4 fw-semibold">{{ applications|length }}</div>
+                    </div>
+                </div>
             </div>
-        {% else %}
-            <div class="text-center py-5">
-                <div class="display-6 text-muted mb-2"><i class="bi bi-briefcase"></i></div>
-                <h3 class="h5">No jobs yet</h3>
-                <p class="text-muted mb-3">Create your first job listing to start receiving applicants.</p>
-                <a href="{{ url_for('employer_bp.add_job') }}" class="btn btn-primary">Create Job</a>
-            </div>
-        {% endif %}
-    </div>
 
-    <div class="portal-card bg-white p-4 mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h2 class="h5 fw-bold mb-1">Recent Applications</h2>
-                <p class="text-muted mb-0">Candidates who recently applied to your jobs.</p>
+            <div class="portal-card bg-white p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h2 class="h5 fw-bold mb-1">Recent Applications</h2>
+                        <p class="text-muted mb-0">Candidates who recently applied to your jobs.</p>
+                    </div>
+                    <span class="badge text-bg-light border">{{ applications|length }} total</span>
+                </div>
+
+                {% if applications %}
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Candidate</th>
+                                    <th>Job</th>
+                                    <th>Status</th>
+                                    <th>Score</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for application in applications %}
+                                    <tr>
+                                        <td>
+                                            {% if application.candidate %}
+                                                <div class="fw-semibold">{{ application.candidate.first_name }} {{ application.candidate.last_name }}</div>
+                                                <div class="text-muted small">{{ application.candidate.email }}</div>
+                                            {% else %}
+                                                <div class="text-muted">Candidate not found</div>
+                                                <div class="small text-muted">{{ application.user_id }}</div>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if application.job %}
+                                                <div class="fw-semibold">
+                                                    <a href="{{ url_for('employer_bp.view_job', job_id=application.job.id) }}" class="text-decoration-none">
+                                                        {{ application.job.title }}
+                                                    </a>
+                                                </div>
+                                                <div class="small text-muted">{{ application.job.experience_level or 'N/A' }}</div>
+                                            {% else %}
+                                                <div class="text-muted">Job not found</div>
+                                                <div class="small text-muted">{{ application.job_id }}</div>
+                                            {% endif %}
+                                        </td>
+                                        <td><span class="badge text-bg-primary">{{ application.status }}</span></td>
+                                        <td>{{ application.score if application.score is not none else 'Pending feedback' }}</td>
+                                        <td>
+                                            <a href="{{ url_for('employer_bp.view_candidate', candidate_id=application.user_id) }}" class="btn btn-sm btn-outline-primary">View Candidate</a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 text-muted">No applications yet.</div>
+                {% endif %}
             </div>
-            <span class="badge text-bg-light border">{{ applications|length }} total</span>
         </div>
 
-        {% if applications %}
-            <div class="table-responsive">
-                <table class="table align-middle">
-                    <thead>
-                        <tr>
-                            <th>Candidate</th>
-                            <th>Job ID</th>
-                            <th>Status</th>
-                            <th>Score</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for application in applications %}
-                            <tr>
-                                <td>{{ application.user_id }}</td>
-                                <td class="text-break">{{ application.job_id }}</td>
-                                <td><span class="badge text-bg-primary">{{ application.status }}</span></td>
-                                <td>{{ application.score }}</td>
-                                <td>
-                                    <a href="{{ url_for('employer_bp.view_candidate', candidate_id=application.user_id) }}" class="btn btn-sm btn-outline-primary">View Candidate</a>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+        <div class="col-12 col-xxl-4">
+            <div class="portal-card bg-white p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h2 class="h5 fw-bold mb-1">Quick Actions</h2>
+                        <p class="text-muted mb-0">Common employer tasks.</p>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-3">
+                    <a href="{{ url_for('employer_bp.add_job') }}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-plus-lg me-1"></i> Post a Job
+                    </a>
+                    <a href="{{ url_for('employer_bp.employer_jobs') }}" class="btn btn-outline-primary btn-lg">
+                        <i class="bi bi-briefcase me-1"></i> Open Jobs
+                    </a>
+                    <a href="{{ url_for('employer_bp.manage_taxonomy') }}" class="btn btn-outline-secondary btn-lg">
+                        <i class="bi bi-diagram-3 me-1"></i> Manage Taxonomy
+                    </a>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="small text-uppercase text-muted mb-3">Workspace Summary</div>
+                <div class="d-grid gap-3">
+                    <div class="metric-card p-3">
+                        <div class="text-muted small text-uppercase">Verified Employer</div>
+                        <div class="fw-semibold">{{ 'Yes' if employer and employer.verified else 'Pending' }}</div>
+                    </div>
+                    <div class="metric-card p-3">
+                        <div class="text-muted small text-uppercase">Visible Jobs</div>
+                        <div class="fw-semibold">{{ jobs|length }}</div>
+                    </div>
+                    <div class="metric-card p-3">
+                        <div class="text-muted small text-uppercase">Application Volume</div>
+                        <div class="fw-semibold">{{ applications|length }}</div>
+                    </div>
+                </div>
             </div>
-        {% else %}
-            <div class="text-center py-4 text-muted">No applications yet.</div>
-        {% endif %}
+        </div>
     </div>
 {% endblock %}

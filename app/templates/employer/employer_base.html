@@ -2,55 +2,105 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <script>try { document.documentElement.setAttribute('data-bs-theme', localStorage.getItem('maisha-theme') === 'dark' ? 'dark' : 'light'); } catch (_) {}</script>
+    <script src="{{ url_for('static', filename='js/theme.js', v='1') }}" defer></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block page_title %}Employer Portal{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="icon" href="{{ url_for('static', filename='icon/maisha_jobs.png') }}" type="image/x-icon">
+    <link rel="manifest" href="{{ url_for('static', filename='pwa/manifest.json') }}">
+    <meta name="theme-color" content="#0f172a">
     <style>
         :root {
             --sidebar-bg: #0f172a;
             --sidebar-accent: #38bdf8;
             --page-bg: #f8fafc;
             --card-border: #e2e8f0;
+            --sidebar-expanded: 280px;
+            --sidebar-collapsed: 84px;
+        }
+
+        html, body {
+            width: 100%;
+            overflow-x: hidden;
+            height: 100%;
         }
 
         body {
             background: var(--page-bg);
+            min-height: 100vh;
+            overflow: hidden;
         }
 
         .employer-shell {
             min-height: 100vh;
         }
 
-        .sidebar {
-            background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
-            color: #e2e8f0;
-            min-height: 100vh;
-            position: sticky;
-            top: 0;
+        .workspace {
+            display: flex;
+            height: 100vh;
+            width: 100%;
         }
 
-        .sidebar .brand {
+        .sidebar-desktop {
+            width: var(--sidebar-expanded);
+            flex: 0 0 var(--sidebar-expanded);
+            background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+            color: #e2e8f0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            transition: width 0.25s ease, flex-basis 0.25s ease, padding 0.25s ease;
+        }
+
+        .sidebar-offcanvas {
+            background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+            color: #e2e8f0;
+        }
+
+        .sidebar-brand {
             color: #fff;
             font-weight: 700;
             letter-spacing: 0.02em;
         }
 
-        .sidebar .nav-link {
+        .sidebar-user {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .sidebar-desktop .nav-link,
+        .sidebar-offcanvas .nav-link {
             color: #cbd5e1;
             border-radius: 0.75rem;
             padding: 0.75rem 1rem;
             margin-bottom: 0.35rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
         }
 
-        .sidebar .nav-link:hover,
-        .sidebar .nav-link.active {
+        .sidebar-desktop .nav-link:hover,
+        .sidebar-desktop .nav-link.active,
+        .sidebar-offcanvas .nav-link:hover,
+        .sidebar-offcanvas .nav-link.active {
             background: rgba(56, 189, 248, 0.12);
             color: #fff;
         }
 
-        .sidebar .nav-link i {
+        .sidebar-desktop .nav-link i,
+        .sidebar-offcanvas .nav-link i {
             width: 1.25rem;
+            flex: 0 0 1.25rem;
+        }
+
+        .app-main {
+            flex: 1 1 auto;
+            min-width: 0;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 1.5rem 2rem;
         }
 
         .portal-card {
@@ -78,55 +128,204 @@
             margin: 0;
         }
 
+        .main-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .sidebar-toggle {
+            border-radius: 999px;
+        }
+
+        .site-footer {
+            margin-top: 3rem;
+            padding: 1rem 0 0.5rem;
+            color: #64748b;
+            font-size: 0.95rem;
+            text-align: center;
+        }
+
+        .site-footer a {
+            color: inherit;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .site-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .sidebar-collapsed .sidebar-desktop {
+            width: var(--sidebar-collapsed);
+            flex-basis: var(--sidebar-collapsed);
+            padding-left: 0.9rem !important;
+            padding-right: 0.9rem !important;
+        }
+
+        .sidebar-collapsed .sidebar-brand-copy,
+        .sidebar-collapsed .sidebar-copy,
+        .sidebar-collapsed .sidebar-user-copy,
+        .sidebar-collapsed .sidebar-footer-copy {
+            display: none !important;
+        }
+
+        .sidebar-user-initials-only {
+            display: none;
+        }
+
+        .sidebar-collapsed .sidebar-user-initials-only {
+            display: block;
+        }
+
+        .sidebar-collapsed .sidebar-desktop .nav-link {
+            justify-content: center;
+            padding-left: 0.6rem;
+            padding-right: 0.6rem;
+        }
+
+        .sidebar-collapsed .sidebar-desktop .nav-text {
+            display: none;
+        }
+
         @media (max-width: 991.98px) {
-            .sidebar {
-                min-height: auto;
-                position: relative;
+            body {
+                overflow: auto;
+            }
+
+            .workspace {
+                display: block;
+                height: auto;
+            }
+
+            .sidebar-desktop {
+                display: none;
+            }
+
+            .app-main {
+                height: auto;
+                overflow: visible;
+                padding: 1rem;
+            }
+
+            .main-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .main-toolbar .toolbar-actions {
+                width: 100%;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 0.5rem;
+            }
+
+            .main-toolbar .toolbar-actions .btn {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .page-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .page-header .btn {
+                width: 100%;
+            }
+
+            .site-footer {
+                padding-left: 1rem;
+                padding-right: 1rem;
             }
         }
     </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/maisha.css', v='20261027-otp') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/workspace.css', v='20261027-refresh') }}">
 </head>
 <body>
-    <div class="container-fluid employer-shell">
-        <div class="row g-0">
-            <aside class="col-lg-3 col-xl-2 sidebar p-4">
-                <div class="d-flex align-items-center gap-2 mb-4">
-                    <div class="rounded-circle bg-info text-dark d-inline-flex align-items-center justify-content-center" style="width: 2.75rem; height: 2.75rem;">
-                        <i class="bi bi-building"></i>
+    {% macro sidebar_inner() %}
+        {% set employer_initials = ((employer.firstName[:1] if employer and employer.firstName else '') ~ (employer.lastName[:1] if employer and employer.lastName else ''))|upper %}
+        <div class="d-flex align-items-center gap-2 mb-4">
+            <div class="rounded-circle bg-info text-dark d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 2.75rem; height: 2.75rem;">
+                <i class="bi bi-building"></i>
+            </div>
+            <div class="sidebar-brand-copy">
+                <div class="sidebar-brand">Employer Portal</div>
+                <small class="sidebar-copy text-secondary-emphasis">Jobs dashboard</small>
+            </div>
+        </div>
+
+        {% if employer %}
+            <div class="sidebar-user rounded-4 p-3 mb-4">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-white text-dark d-inline-flex align-items-center justify-content-center flex-shrink-0 fw-semibold" style="width: 2.5rem; height: 2.5rem;">
+                        {{ employer_initials or 'E' }}
                     </div>
+                    <div class="sidebar-user-copy">
+                        <div class="fw-semibold">
+                            {{ employer.firstName }} {{ employer.lastName }}
+                            <span class="sidebar-user-initials">({{ employer_initials or 'E' }})</span>
+                        </div>
+                        <div class="small text-light-emphasis">{{ employer.email }}</div>
+                    </div>
+                </div>
+                <div class="sidebar-user-initials-only fw-semibold text-center mt-2">{{ employer_initials or 'E' }}</div>
+            </div>
+        {% endif %}
+
+        <nav class="nav flex-column">
+            <a class="nav-link {% if request.endpoint == 'employer_bp.employer_dashboard' %}active{% endif %}" href="{{ url_for('employer_bp.employer_dashboard') }}">
+                <i class="bi bi-speedometer2"></i><span class="nav-text">Dashboard</span>
+            </a>
+            <a class="nav-link {% if request.endpoint == 'employer_bp.employer_jobs' %}active{% endif %}" href="{{ url_for('employer_bp.employer_jobs') }}">
+                <i class="bi bi-briefcase"></i><span class="nav-text">Your Jobs</span>
+            </a>
+            <a class="nav-link {% if request.endpoint == 'employer_bp.add_job' %}active{% endif %}" href="{{ url_for('employer_bp.add_job') }}">
+                <i class="bi bi-plus-circle"></i><span class="nav-text">Add Job</span>
+            </a>
+            <a class="nav-link {% if request.endpoint == 'employer_bp.manage_taxonomy' %}active{% endif %}" href="{{ url_for('employer_bp.manage_taxonomy') }}">
+                <i class="bi bi-diagram-3"></i><span class="nav-text">Taxonomy</span>
+            </a>
+            <a class="nav-link {% if request.endpoint == 'employer_bp.employer_profile' %}active{% endif %}" href="{{ url_for('employer_bp.employer_profile') }}">
+                <i class="bi bi-person"></i><span class="nav-text">Profile</span>
+            </a>
+            <a class="nav-link" href="{{ url_for('employer_bp.employer_logout') }}">
+                <i class="bi bi-box-arrow-right"></i><span class="nav-text">Logout</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer-copy mt-auto pt-4 small text-light-emphasis">
+            Powered by Cybermaisha
+        </div>
+    {% endmacro %}
+
+    <div class="container-fluid employer-shell">
+        <div class="workspace" id="employerShell">
+            <aside class="sidebar-desktop p-4 d-none d-lg-flex flex-column">
+                {{ sidebar_inner() }}
+            </aside>
+
+            <main class="app-main">
+                <div class="main-toolbar">
                     <div>
-                        <div class="brand">Employer Portal</div>
-                        <small class="text-secondary-emphasis">Jobs dashboard</small>
+                        <h1 class="h4 fw-bold mb-1 d-lg-none">Employer Portal</h1>
+                        <p class="text-muted mb-0 d-lg-none">Manage jobs, applicants, and profile</p>
+                    </div>
+                    <div class="toolbar-actions">
+                        <button type="button" class="btn theme-toggle" data-theme-toggle aria-label="Switch to dark mode"><i class="bi bi-moon" aria-hidden="true"></i></button>
+                        <button class="btn btn-outline-secondary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#employerSidebarOffcanvas" aria-controls="employerSidebarOffcanvas">
+                            <i class="bi bi-list me-1"></i> Menu
+                        </button>
+                        <button class="btn btn-outline-primary d-none d-lg-inline-flex sidebar-toggle" type="button" id="sidebarToggle">
+                            <i class="bi bi-layout-sidebar-inset me-1"></i> Collapse
+                        </button>
                     </div>
                 </div>
 
-                {% if employer %}
-                    <div class="bg-dark bg-opacity-25 rounded-4 p-3 mb-4">
-                        <div class="fw-semibold">{{ employer.firstName }} {{ employer.lastName }}</div>
-                        <div class="small text-light-emphasis">{{ employer.email }}</div>
-                        <span class="badge text-bg-{{ 'success' if employer.verified else 'warning' }} mt-2">
-                            {{ 'Verified' if employer.verified else 'Pending verification' }}
-                        </span>
-                    </div>
-                {% endif %}
-
-                <nav class="nav flex-column">
-                    <a class="nav-link {% if request.endpoint == 'employer_bp.employer_dashboard' %}active{% endif %}" href="{{ url_for('employer_bp.employer_dashboard') }}">
-                        <i class="bi bi-speedometer2"></i> Dashboard
-                    </a>
-                    <a class="nav-link {% if request.endpoint == 'employer_bp.add_job' %}active{% endif %}" href="{{ url_for('employer_bp.add_job') }}">
-                        <i class="bi bi-plus-circle"></i> Add Job
-                    </a>
-                    <a class="nav-link {% if request.endpoint == 'employer_bp.employer_profile' %}active{% endif %}" href="{{ url_for('employer_bp.employer_profile') }}">
-                        <i class="bi bi-person"></i> Profile
-                    </a>
-                    <a class="nav-link" href="{{ url_for('employer_bp.employer_logout') }}">
-                        <i class="bi bi-box-arrow-right"></i> Logout
-                    </a>
-                </nav>
-            </aside>
-
-            <main class="col-lg-9 col-xl-10 p-4 p-lg-5">
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         <div class="mb-4">
@@ -140,10 +339,58 @@
                 {% endwith %}
 
                 {% block content %}{% endblock %}
+
+                <footer class="site-footer">
+                    Powered by <a href="https://cybermaisha.co.ke" target="_blank" rel="noopener">Cybermaisha Solutions</a>
+                </footer>
             </main>
         </div>
     </div>
 
+    <div class="offcanvas offcanvas-start sidebar-offcanvas" tabindex="-1" id="employerSidebarOffcanvas" aria-labelledby="employerSidebarOffcanvasLabel">
+        <div class="offcanvas-header border-bottom border-light border-opacity-10">
+            <div>
+                <h5 class="offcanvas-title" id="employerSidebarOffcanvasLabel">Employer Portal</h5>
+                <div class="small text-light-emphasis">Jobs dashboard</div>
+            </div>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body d-flex flex-column">
+            {{ sidebar_inner() }}
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        (() => {
+            const shell = document.getElementById('employerShell');
+            const toggle = document.getElementById('sidebarToggle');
+            if (!shell || !toggle) {
+                return;
+            }
+
+            const storageKey = 'employer-sidebar-collapsed';
+            const applyState = (collapsed) => {
+                shell.classList.toggle('sidebar-collapsed', collapsed);
+                toggle.innerHTML = collapsed
+                    ? '<i class="bi bi-layout-sidebar-inset-reverse me-1"></i> Expand'
+                    : '<i class="bi bi-layout-sidebar-inset me-1"></i> Collapse';
+            };
+
+            applyState(localStorage.getItem(storageKey) === '1');
+
+            toggle.addEventListener('click', () => {
+                const collapsed = !shell.classList.contains('sidebar-collapsed');
+                applyState(collapsed);
+                localStorage.setItem(storageKey, collapsed ? '1' : '0');
+            });
+        })();
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register("{{ url_for('static', filename='pwa/sw.js') }}");
+            });
+        }
+    </script>
 </body>
 </html>

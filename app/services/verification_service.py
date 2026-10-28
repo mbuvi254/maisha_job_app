@@ -1,6 +1,7 @@
 from app.repository.verification_repository import VerificationRepository
 import secrets
 from flask_mail import Mail, Message
+from flask import current_app
 from datetime import datetime
 import logging
 
@@ -46,7 +47,7 @@ def send_verification_email2(user_email, otp):
     try:
         msg = Message(
             subject='Cybermaisha OTP Verification',
-            sender='accounts@cm.co.ke',
+            sender=current_app.config['MAIL_DEFAULT_SENDER'],
             recipients=[user_email],
             body=f"Your OTP code is {otp}. It is valid for 10 minutes."
         )
@@ -79,7 +80,7 @@ def send_verification_email(user_email: str, otp: str) -> bool:
         # Create email message
         msg = Message(
             subject='Your Verification Code for Cybermaisha',
-            sender='accounts@cm.co.ke',
+            sender=current_app.config['MAIL_DEFAULT_SENDER'],
             recipients=[user_email],
             html=f"""
             <html>
@@ -106,4 +107,89 @@ def send_verification_email(user_email: str, otp: str) -> bool:
         
     except Exception as e:
         logging.error(f"Failed to send verification email to {user_email}: {str(e)}", exc_info=True)
+        return False
+
+
+def send_interview_invitation_email(user_email: str, candidate_name: str, job_title: str, interview_url: str) -> bool:
+    """Send an interview invitation email with a direct link to the interview page."""
+    try:
+        if not all([user_email, job_title, interview_url]):
+            logging.error("Missing data provided for interview invitation email")
+            return False
+
+        display_name = candidate_name or "Candidate"
+        msg = Message(
+            subject=f'Interview invitation for {job_title}',
+            sender=current_app.config['MAIL_DEFAULT_SENDER'],
+            recipients=[user_email],
+            html=f"""
+            <html>
+                <body>
+                    <h2>Hi {display_name},</h2>
+                    <p>Your interview for <strong>{job_title}</strong> is ready.</p>
+                    <p>
+                        <a href="{interview_url}" style="display:inline-block;padding:12px 18px;background:#1d4ed8;color:#fff;text-decoration:none;border-radius:8px;">
+                            Start Interview
+                        </a>
+                    </p>
+                    <p>If the button does not work, copy this link into your browser:</p>
+                    <p>{interview_url}</p>
+                    <p>© {datetime.now().year} Cybermaisha. All rights reserved.</p>
+                </body>
+            </html>
+            """
+        )
+        msg.body = (
+            f"Hi {display_name},\n\n"
+            f"Your interview for {job_title} is ready.\n"
+            f"Open this link to start: {interview_url}\n"
+        )
+        mail.send(msg)
+        logging.info(f"Interview invitation email sent to {user_email}")
+        return True
+    except Exception as e:
+        logging.error(f"Failed to send interview invitation email to {user_email}: {str(e)}", exc_info=True)
+        return False
+
+
+def send_application_submission_email(user_email: str, candidate_name: str, job_title: str, job_url: str) -> bool:
+    """Send a confirmation email when a candidate submits a job application."""
+    try:
+        if not all([user_email, job_title, job_url]):
+            logging.error("Missing data provided for application submission email")
+            return False
+
+        display_name = candidate_name or "Candidate"
+        msg = Message(
+            subject=f'Application received for {job_title}',
+            sender=current_app.config['MAIL_DEFAULT_SENDER'],
+            recipients=[user_email],
+            html=f"""
+            <html>
+                <body>
+                    <h2>Hi {display_name},</h2>
+                    <p>Your application for <strong>{job_title}</strong> has been submitted successfully.</p>
+                    <p>You can review the job and your next steps here:</p>
+                    <p>
+                        <a href="{job_url}" style="display:inline-block;padding:12px 18px;background:#1d4ed8;color:#fff;text-decoration:none;border-radius:8px;">
+                            View Job
+                        </a>
+                    </p>
+                    <p>If the button does not work, copy this link into your browser:</p>
+                    <p>{job_url}</p>
+                    <p>© {datetime.now().year} Cybermaisha. All rights reserved.</p>
+                </body>
+            </html>
+            """
+        )
+        msg.body = (
+            f"Hi {display_name},\n\n"
+            f"Your application for {job_title} has been submitted successfully.\n"
+            f"View the job here: {job_url}\n"
+        )
+        mail.send(msg)
+        logging.info(f"Application submission email sent to {user_email}")
+        return True
+    except Exception as e:
+        logging.error(f"Failed to send application submission email to {user_email}: {str(e)}", exc_info=True)
         return False

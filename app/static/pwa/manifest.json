@@ -1,0 +1,22 @@
+{
+  "short_name": "Maisha Jobs",
+  "name": "Maisha Jobs Platform",
+  "description": "Maisha Jobs Platform",
+  "icons": [
+    {
+      "src": "/static/icon/maisha_jobs.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/static/icon/maisha_jobs.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "scope": "/",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "display": "standalone"
+}

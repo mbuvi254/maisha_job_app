@@ -1,0 +1,30 @@
+{% extends 'jobs/job_base.html' %}
+{% block page_title %}Browse opportunities · Maisha Jobs{% endblock %}
+{% block content %}
+<section class="browse-intro grid-surface">
+    <div class="container">
+        <nav aria-label="Breadcrumb" class="job-breadcrumb"><a href="{{ url_for('jobs_bp.index') }}">Home</a><span>/</span><span aria-current="page">Jobs</span></nav>
+        <span class="live-pill"><span class="status-dot"></span> {{ total_jobs }} {{ 'matching roles' if search_query or selected_industry_id or selected_category_id or selected_experience_level else 'open roles' }}</span>
+        <h1>Find your next <span>great opportunity.</span></h1>
+        <p>Explore opportunities across industries. Compare the skills, experience, and application requirements for every role, then take your next step. Browse freely, apply when you’re ready.</p>
+    </div>
+</section>
+<div class="container browse-layout">
+    <aside>{% include 'jobs/_filters.html' %}</aside>
+    <section class="browse-results" aria-label="Job results">
+        <div class="results-heading"><span>Showing <strong>{{ range_start }}{% if range_end != range_start %}–{{ range_end }}{% endif %}</strong> of <strong>{{ total_jobs }}</strong> jobs</span><span class="results-order">Newest first</span></div>
+        {% for job in jobs %}
+        <article class="job-list-row">
+            <div class="listing-avatar" aria-hidden="true">{{ (job.industry_name or job.title)[:1]|upper }}</div>
+            <div class="listing-copy">
+                <h2><a href="{{ url_for('jobs_bp.job_detail', job_id=job.id) }}">{{ job.title }}</a></h2>
+                <div class="listing-meta"><span>{{ job.industry_name or 'Career opportunity' }}</span>{% if job.category_name %}<span>{{ job.category_name }}</span>{% endif %}{% if job.experience_level %}<span>{{ job.experience_level }}</span>{% endif %}{% if job.ai_enabled %}<span class="listing-ai"><i class="bi bi-stars"></i> AI interview</span>{% endif %}</div>
+                {% if job.skills %}{% set skills = job.skills.split(',') %}<div class="listing-skills">{% for skill in skills[:4] %}<span class="skill-chip">{{ skill.strip() }}</span>{% endfor %}{% if skills|length > 4 %}<span class="more-skills">+{{ skills|length - 4 }}</span>{% endif %}</div>{% endif %}
+            </div>
+            <a class="btn listing-view" href="{{ url_for('jobs_bp.job_detail', job_id=job.id) }}" aria-label="View {{ job.title }}">View details <i class="bi bi-arrow-up-right"></i></a>
+        </article>
+        {% else %}<div class="results-empty"><i class="bi bi-search"></i><h2>No matching opportunities yet</h2><p>Try different keywords or broaden your filters.</p><a href="{{ url_for('jobs_bp.browse_jobs') }}" class="btn btn-outline-primary">Reset search</a></div>{% endfor %}
+        {% if total_pages > 1 %}<nav class="jobs-pagination" aria-label="Job result pages">{% if page > 1 %}<a class="btn btn-outline-primary" href="{{ pagination_url(page - 1) }}" aria-label="Previous page"><i class="bi bi-chevron-left"></i></a>{% endif %}<span>Page {{ page }} of {{ total_pages }}</span>{% if page < total_pages %}<a class="btn btn-outline-primary" href="{{ pagination_url(page + 1) }}" aria-label="Next page"><i class="bi bi-chevron-right"></i></a>{% endif %}</nav>{% endif %}
+    </section>
+</div>
+{% endblock %}

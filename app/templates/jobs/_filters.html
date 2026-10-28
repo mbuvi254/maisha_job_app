@@ -1,0 +1,18 @@
+<form method="GET" action="{{ url_for('jobs_bp.browse_jobs') }}" class="browse-filters" aria-label="Job filters">
+    <div class="filter-heading"><i class="bi bi-sliders2"></i> Refine search</div>
+    <div class="filter-fields">
+        <label for="q" class="visually-hidden">Search jobs by keyword</label>
+        <div class="filter-search"><i class="bi bi-search"></i><input id="q" name="q" type="search" class="form-control" value="{{ search_query }}" placeholder="Search roles, skills, industry"></div>
+        <label for="industry_id" class="filter-label">Industry</label>
+        <select id="industry_id" name="industry_id" class="form-select"><option value="">All industries</option>{% for industry in industries %}<option value="{{ industry.id }}" {% if selected_industry_id == industry.id %}selected{% endif %}>{{ industry.name }}</option>{% endfor %}</select>
+        <label for="category_id" class="filter-label">Category</label>
+        <select id="category_id" name="category_id" class="form-select"><option value="">All categories</option>{% for group in grouped_categories %}{% if not selected_industry_id or selected_industry_id == group.industry.id %}<optgroup label="{{ group.industry.name }}">{% for category in group.categories %}<option value="{{ category.id }}" {% if selected_category_id == category.id %}selected{% endif %}>{{ category.name }}</option>{% endfor %}</optgroup>{% endif %}{% endfor %}</select>
+        <label for="experience_level" class="filter-label">Experience</label>
+        <select id="experience_level" name="experience_level" class="form-select"><option value="">All experience levels</option>{% for level in experience_levels %}<option value="{{ level }}" {% if selected_experience_level == level %}selected{% endif %}>{{ level }}</option>{% endfor %}</select>
+        <button class="btn btn-primary w-100 mt-4" type="submit">Find jobs <i class="bi bi-arrow-right ms-1"></i></button>
+        {% if search_query or selected_industry_id or selected_category_id or selected_experience_level %}<a href="{{ url_for('jobs_bp.browse_jobs') }}" class="d-block text-center small mt-3">Clear all filters</a>{% endif %}
+        <div class="filter-note"><i class="bi bi-grid"></i><span>{{ industries|length }} industries to explore</span></div>
+    </div>
+</form>
+<script id="taxonomy-data" type="application/json">{{ grouped_categories|tojson }}</script>
+<script src="{{ url_for('static', filename='js/job-filters.js', v='1') }}" defer></script>

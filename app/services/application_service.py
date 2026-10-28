@@ -27,11 +27,18 @@ def get_all_applications_for_employer_jobs(job_ids):
     return applications
 
 
+def get_applications_by_candidate_id(candidate_id):
+    return repo.fetch_by_candidate_id(candidate_id)
+
+
 def submit_application(data):
     required_fields = ["job_id", "user_id"]
     for field in required_fields:
         if not data.get(field):
             return {"error": f"{field} is required"}, 400
+
+    if data.get("resume_required") and not data.get("resume_path"):
+        return {"error": "Resume upload is required for this job"}, 400
 
     existing = repo.fetch_by_candidate_and_job(data.get("user_id"), data.get("job_id"))
     if existing:
@@ -54,3 +61,7 @@ def update_application_score(application_id, score):
 
 def update_application_status_and_score(application_id, status, score):
     return repo.update_status_and_score(application_id, status, score)
+
+
+def update_application_resume_analysis(application_id, data):
+    return repo.update_resume_analysis(application_id, data)

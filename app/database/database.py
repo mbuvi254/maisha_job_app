@@ -1,6 +1,7 @@
 import pymysql
 from dotenv import load_dotenv
 import os
+import uuid
 
 load_dotenv()
 
@@ -48,11 +49,13 @@ class Database:
             CREATE TABLE IF NOT EXISTS jobs (
                 id CHAR(36) PRIMARY KEY,
                 employer_id CHAR(36) NOT NULL,
+                category_id CHAR(36) NULL,
                 title TEXT,
                 description TEXT,
                 skills TEXT,
                 experience_level TEXT,
                 ai_enabled BOOLEAN,
+                resume_required BOOLEAN DEFAULT 0,
                 deadline DATETIME,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -62,6 +65,102 @@ class Database:
         jobs_employer_column = cursor.fetchone()
         if not jobs_employer_column:
             cursor.execute("ALTER TABLE jobs ADD COLUMN employer_id CHAR(36) NULL AFTER id")
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS industries (
+                id CHAR(36) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_industry_name (name)
+            )
+        """)
+
+        cursor.execute("SHOW COLUMNS FROM industries LIKE 'id'")
+        industries_id_column = cursor.fetchone()
+        if industries_id_column and str(industries_id_column.get("Type", "")).lower() != "char(36)":
+            cursor.execute("ALTER TABLE industries MODIFY COLUMN id CHAR(36) NOT NULL")
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS job_categories (
+                id CHAR(36) PRIMARY KEY,
+                industry_id CHAR(36) NOT NULL,
+                name VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_category_name (industry_id, name)
+            )
+        """)
+
+        cursor.execute("SHOW COLUMNS FROM job_categories LIKE 'id'")
+        job_categories_id_column = cursor.fetchone()
+        if job_categories_id_column and str(job_categories_id_column.get("Type", "")).lower() != "char(36)":
+            cursor.execute("ALTER TABLE job_categories MODIFY COLUMN id CHAR(36) NOT NULL")
+
+        cursor.execute("SHOW COLUMNS FROM job_categories LIKE 'industry_id'")
+        job_categories_industry_column = cursor.fetchone()
+        if not job_categories_industry_column:
+            cursor.execute("ALTER TABLE job_categories ADD COLUMN industry_id CHAR(36) NULL AFTER id")
+
+        cursor.execute("""
+            SELECT CONSTRAINT_NAME
+            FROM information_schema.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'job_categories'
+              AND COLUMN_NAME = 'industry_id'
+              AND REFERENCED_TABLE_NAME = 'industries'
+        """)
+        category_industry_fk = cursor.fetchone()
+        if not category_industry_fk:
+            try:
+                cursor.execute("""
+                    ALTER TABLE job_categories
+                    ADD CONSTRAINT fk_job_categories_industry
+                    FOREIGN KEY (industry_id) REFERENCES industries(id)
+                    ON DELETE CASCADE
+                    ON UPDATE CASCADE
+                """)
+            except Exception as e:
+                print(f"Unable to add job_categories industry foreign key constraint: {e}")
+
+        cursor.execute("SHOW COLUMNS FROM jobs LIKE 'category_id'")
+        jobs_category_column = cursor.fetchone()
+        if not jobs_category_column:
+            cursor.execute("ALTER TABLE jobs ADD COLUMN category_id CHAR(36) NULL AFTER employer_id")
+
+        # Add structured job content without changing existing descriptions or posted dates.
+        for field in ("responsibilities", "requirements", "who_should_apply", "salary_insight", "location"):
+            cursor.execute("SHOW COLUMNS FROM jobs LIKE %s", (field,))
+            if not cursor.fetchone():
+                cursor.execute(f"ALTER TABLE jobs ADD COLUMN {field} TEXT NULL")
+
+        cursor.execute("SHOW COLUMNS FROM jobs LIKE 'is_technical'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE jobs ADD COLUMN is_technical BOOLEAN DEFAULT 0")
+
+        cursor.execute("SHOW COLUMNS FROM jobs LIKE 'resume_required'")
+        jobs_resume_required_column = cursor.fetchone()
+        if not jobs_resume_required_column:
+            cursor.execute("ALTER TABLE jobs ADD COLUMN resume_required BOOLEAN DEFAULT 0 AFTER ai_enabled")
+
+        cursor.execute("""
+            SELECT CONSTRAINT_NAME
+            FROM information_schema.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'jobs'
+              AND COLUMN_NAME = 'category_id'
+              AND REFERENCED_TABLE_NAME = 'job_categories'
+        """)
+        job_category_fk = cursor.fetchone()
+        if not job_category_fk:
+            try:
+                cursor.execute("""
+                    ALTER TABLE jobs
+                    ADD CONSTRAINT fk_jobs_category
+                    FOREIGN KEY (category_id) REFERENCES job_categories(id)
+                    ON DELETE SET NULL
+                    ON UPDATE CASCADE
+                """)
+            except Exception as e:
+                print(f"Unable to add jobs category foreign key constraint: {e}")
 
         cursor.execute("""
             SELECT CONSTRAINT_NAME
@@ -84,6 +183,69 @@ class Database:
             except Exception as e:
                 print(f"Unable to add jobs foreign key constraint: {e}")
 
+        cursor.execute("SELECT COUNT(*) AS total FROM industries")
+        industry_count = cursor.fetchone()
+        if not industry_count or int(industry_count.get("total", 0) or 0) == 0:
+            default_industries = [
+                "Healthcare",
+                "Technology",
+                "Finance",
+                "Education",
+            ]
+            industry_ids = {}
+            for name in default_industries:
+                industry_id = str(uuid.uuid4())
+                cursor.execute(
+                    "INSERT INTO industries (id, name) VALUES (%s, %s)",
+                    (industry_id, name),
+                )
+                industry_ids[name] = industry_id
+
+            default_categories = {
+                "Healthcare": ["Nursing", "Medical Administration", "Pharmacy"],
+                "Technology": ["Software Engineering", "Data Science", "Product Management"],
+                "Finance": ["Accounting", "Risk Management", "Financial Analysis"],
+                "Education": ["Teaching", "Academic Administration", "Curriculum Design"],
+            }
+            for industry_name, category_names in default_categories.items():
+                industry_id = industry_ids.get(industry_name)
+                for category_name in category_names:
+                    cursor.execute(
+                        "INSERT INTO job_categories (id, industry_id, name) VALUES (%s, %s, %s)",
+                        (str(uuid.uuid4()), industry_id, category_name),
+                    )
+
+        cursor.execute("SELECT COUNT(*) AS total FROM job_categories")
+        category_count = cursor.fetchone()
+        if category_count and int(category_count.get("total", 0) or 0) == 0:
+            cursor.execute("SELECT id, name FROM industries")
+            industries = cursor.fetchall()
+            default_categories = {
+                "Healthcare": ["Nursing", "Medical Administration", "Pharmacy"],
+                "Technology": ["Software Engineering", "Data Science", "Product Management"],
+                "Finance": ["Accounting", "Risk Management", "Financial Analysis"],
+                "Education": ["Teaching", "Academic Administration", "Curriculum Design"],
+            }
+            for industry in industries:
+                for category_name in default_categories.get(industry.get("name"), []):
+                    cursor.execute(
+                        "INSERT IGNORE INTO job_categories (id, industry_id, name) VALUES (%s, %s, %s)",
+                        (str(uuid.uuid4()), industry.get("id"), category_name),
+                    )
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS auth_challenges (
+                id CHAR(64) PRIMARY KEY,
+                role VARCHAR(20) NOT NULL,
+                email VARCHAR(254) NOT NULL,
+                code_hash CHAR(64) NOT NULL,
+                issued_at DOUBLE NOT NULL,
+                attempts INT NOT NULL DEFAULT 0,
+                consumed BOOLEAN NOT NULL DEFAULT 0,
+                INDEX auth_account (role, email, issued_at)
+            )
+        """)
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS user_verification (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -104,10 +266,83 @@ class Database:
             )
         """)
 
+        for field, definition in (("cv_filename", "VARCHAR(255) NULL"), ("cv_name", "VARCHAR(255) NULL"),
+                                  ("cv_text", "LONGTEXT NULL"), ("cv_uploaded_at", "DATETIME NULL")):
+            cursor.execute("SHOW COLUMNS FROM candidates LIKE %s", (field,))
+            if not cursor.fetchone():
+                cursor.execute(f"ALTER TABLE candidates ADD COLUMN {field} {definition}")
+
         cursor.execute("SHOW COLUMNS FROM candidates LIKE 'id'")
         candidate_id_column = cursor.fetchone()
         if candidate_id_column and str(candidate_id_column.get("Type", "")).lower() != "char(36)":
             cursor.execute("ALTER TABLE candidates MODIFY COLUMN id CHAR(36) NOT NULL")
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS saved_jobs (
+                id CHAR(36) PRIMARY KEY,
+                candidate_id CHAR(36) NOT NULL,
+                job_id CHAR(36) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_saved_job (candidate_id, job_id)
+            )
+        """)
+
+        cursor.execute("SHOW COLUMNS FROM saved_jobs LIKE 'id'")
+        saved_jobs_id_column = cursor.fetchone()
+        if saved_jobs_id_column and str(saved_jobs_id_column.get("Type", "")).lower() != "char(36)":
+            cursor.execute("ALTER TABLE saved_jobs MODIFY COLUMN id CHAR(36) NOT NULL")
+
+        cursor.execute("SHOW COLUMNS FROM saved_jobs LIKE 'candidate_id'")
+        saved_jobs_candidate_column = cursor.fetchone()
+        if not saved_jobs_candidate_column:
+            cursor.execute("ALTER TABLE saved_jobs ADD COLUMN candidate_id CHAR(36) NULL AFTER id")
+
+        cursor.execute("SHOW COLUMNS FROM saved_jobs LIKE 'job_id'")
+        saved_jobs_job_column = cursor.fetchone()
+        if not saved_jobs_job_column:
+            cursor.execute("ALTER TABLE saved_jobs ADD COLUMN job_id CHAR(36) NULL AFTER candidate_id")
+
+        cursor.execute("""
+            SELECT CONSTRAINT_NAME
+            FROM information_schema.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'saved_jobs'
+              AND COLUMN_NAME = 'candidate_id'
+              AND REFERENCED_TABLE_NAME = 'candidates'
+        """)
+        saved_candidate_fk = cursor.fetchone()
+        if not saved_candidate_fk:
+            try:
+                cursor.execute("""
+                    ALTER TABLE saved_jobs
+                    ADD CONSTRAINT fk_saved_jobs_candidate
+                    FOREIGN KEY (candidate_id) REFERENCES candidates(id)
+                    ON DELETE CASCADE
+                    ON UPDATE CASCADE
+                """)
+            except Exception as e:
+                print(f"Unable to add saved_jobs candidate foreign key constraint: {e}")
+
+        cursor.execute("""
+            SELECT CONSTRAINT_NAME
+            FROM information_schema.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'saved_jobs'
+              AND COLUMN_NAME = 'job_id'
+              AND REFERENCED_TABLE_NAME = 'jobs'
+        """)
+        saved_job_fk = cursor.fetchone()
+        if not saved_job_fk:
+            try:
+                cursor.execute("""
+                    ALTER TABLE saved_jobs
+                    ADD CONSTRAINT fk_saved_jobs_job
+                    FOREIGN KEY (job_id) REFERENCES jobs(id)
+                    ON DELETE CASCADE
+                    ON UPDATE CASCADE
+                """)
+            except Exception as e:
+                print(f"Unable to add saved_jobs job foreign key constraint: {e}")
 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS applications (
@@ -116,6 +351,8 @@ class Database:
                 user_id CHAR(36),
                 status VARCHAR(50),
                 score FLOAT DEFAULT 0,
+                resume_path TEXT,
+                resume_name TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (job_id) REFERENCES jobs(id)
             )
@@ -145,6 +382,56 @@ class Database:
         applications_score_column = cursor.fetchone()
         if not applications_score_column:
             cursor.execute("ALTER TABLE applications ADD COLUMN score FLOAT DEFAULT 0 AFTER status")
+
+        cursor.execute("SHOW COLUMNS FROM applications LIKE 'resume_path'")
+        applications_resume_path_column = cursor.fetchone()
+        if not applications_resume_path_column:
+            cursor.execute("ALTER TABLE applications ADD COLUMN resume_path TEXT NULL AFTER score")
+
+        cursor.execute("SHOW COLUMNS FROM applications LIKE 'resume_name'")
+        applications_resume_name_column = cursor.fetchone()
+        if not applications_resume_name_column:
+            cursor.execute("ALTER TABLE applications ADD COLUMN resume_name TEXT NULL AFTER resume_path")
+
+        cursor.execute("SHOW COLUMNS FROM applications LIKE 'resume_ai_score'")
+        applications_resume_ai_score_column = cursor.fetchone()
+        if not applications_resume_ai_score_column:
+            cursor.execute("ALTER TABLE applications ADD COLUMN resume_ai_score FLOAT DEFAULT 0 AFTER resume_name")
+
+        cursor.execute("SHOW COLUMNS FROM applications LIKE 'resume_ai_fit'")
+        applications_resume_ai_fit_column = cursor.fetchone()
+        if not applications_resume_ai_fit_column:
+            cursor.execute("ALTER TABLE applications ADD COLUMN resume_ai_fit TEXT NULL AFTER resume_ai_score")
+
+        cursor.execute("SHOW COLUMNS FROM applications LIKE 'resume_ai_summary'")
+        applications_resume_ai_summary_column = cursor.fetchone()
+        if not applications_resume_ai_summary_column:
+            cursor.execute("ALTER TABLE applications ADD COLUMN resume_ai_summary TEXT NULL AFTER resume_ai_fit")
+
+        cursor.execute("SHOW COLUMNS FROM applications LIKE 'resume_ai_strengths'")
+        applications_resume_ai_strengths_column = cursor.fetchone()
+        if not applications_resume_ai_strengths_column:
+            cursor.execute("ALTER TABLE applications ADD COLUMN resume_ai_strengths TEXT NULL AFTER resume_ai_summary")
+
+        cursor.execute("SHOW COLUMNS FROM applications LIKE 'resume_ai_gaps'")
+        applications_resume_ai_gaps_column = cursor.fetchone()
+        if not applications_resume_ai_gaps_column:
+            cursor.execute("ALTER TABLE applications ADD COLUMN resume_ai_gaps TEXT NULL AFTER resume_ai_strengths")
+
+        cursor.execute("SHOW COLUMNS FROM applications LIKE 'resume_ai_recommendation'")
+        applications_resume_ai_recommendation_column = cursor.fetchone()
+        if not applications_resume_ai_recommendation_column:
+            cursor.execute("ALTER TABLE applications ADD COLUMN resume_ai_recommendation TEXT NULL AFTER resume_ai_gaps")
+
+        cursor.execute("SHOW COLUMNS FROM applications LIKE 'resume_ai_source'")
+        applications_resume_ai_source_column = cursor.fetchone()
+        if not applications_resume_ai_source_column:
+            cursor.execute("ALTER TABLE applications ADD COLUMN resume_ai_source TEXT NULL AFTER resume_ai_recommendation")
+
+        cursor.execute("SHOW COLUMNS FROM applications LIKE 'resume_ai_analyzed_at'")
+        applications_resume_ai_analyzed_at_column = cursor.fetchone()
+        if not applications_resume_ai_analyzed_at_column:
+            cursor.execute("ALTER TABLE applications ADD COLUMN resume_ai_analyzed_at TIMESTAMP NULL AFTER resume_ai_source")
 
         cursor.execute("""
             SELECT CONSTRAINT_NAME
@@ -180,6 +467,10 @@ class Database:
                 FOREIGN KEY (application_id) REFERENCES applications(id)
             )
         """)
+
+        cursor.execute("SHOW COLUMNS FROM interviews LIKE 'question_plan'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE interviews ADD COLUMN question_plan LONGTEXT NULL")
 
         cursor.execute("SHOW COLUMNS FROM interviews LIKE 'id'")
         interviews_id_column = cursor.fetchone()
@@ -249,6 +540,24 @@ class Database:
                 FOREIGN KEY (interview_id) REFERENCES interviews(id)
             )
         """)
+
+        cursor.execute("SHOW COLUMNS FROM interview_responses LIKE 'evaluation_status'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE interview_responses ADD COLUMN evaluation_status VARCHAR(20) DEFAULT 'completed'")
+        # A missing evaluation is not a zero grade.
+        cursor.execute("SHOW COLUMNS FROM interview_responses LIKE 'score'")
+        if cursor.fetchone().get("Null") != "YES":
+            cursor.execute("ALTER TABLE interview_responses MODIFY COLUMN score FLOAT NULL DEFAULT 0")
+
+        cursor.execute("SHOW COLUMNS FROM interview_responses LIKE 'expected_answer'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE interview_responses ADD COLUMN expected_answer LONGTEXT NULL")
+        cursor.execute("SHOW COLUMNS FROM interview_responses LIKE 'question_number'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE interview_responses ADD COLUMN question_number INT NULL")
+        cursor.execute("SHOW INDEX FROM interview_responses WHERE Key_name='unique_interview_question_number'")
+        if not cursor.fetchone():
+            cursor.execute("CREATE UNIQUE INDEX unique_interview_question_number ON interview_responses (interview_id, question_number)")
 
         cursor.execute("SHOW COLUMNS FROM interview_responses LIKE 'id'")
         response_id_column = cursor.fetchone()

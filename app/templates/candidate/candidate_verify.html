@@ -1,0 +1,38 @@
+{% extends 'jobs/job_base.html' %}
+{% block page_title %}Verify Candidate{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card soft-card border-0 shadow-sm">
+                <div class="card-body p-4 p-lg-5">
+                    <div class="mb-4">
+                        <span class="job-tag mb-3"><i class="bi bi-shield-check"></i> Verify Account</span>
+                        <h1 class="h3 fw-bold mb-2">Enter your OTP</h1>
+                        <p class="text-muted mb-0">We sent a verification code to your email address.</p>
+                    </div>
+
+                    {% if error %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endif %}
+                    {% if success %}
+                        <div class="alert alert-success">{{ success }}</div>
+                    {% endif %}
+
+                    <form method="POST" action="{{ url_for('candidate_bp.verify_candidate') }}" class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">OTP</label>
+                            <input type="text" name="otp" class="form-control form-control-lg" inputmode="numeric" autocomplete="one-time-code" required>
+                        </div>
+                        <div class="col-12 d-flex flex-wrap gap-2 pt-2">
+                            <button type="submit" class="btn btn-primary btn-lg">Verify</button>
+                            <a href="{{ url_for('candidate_bp.resend_candidate_otp') }}" class="btn btn-outline-primary btn-lg">Resend OTP</a>
+                            <a href="{{ url_for('candidate_bp.login_candidate', next=next_url) }}" class="btn btn-link btn-lg text-decoration-none">Back to login</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

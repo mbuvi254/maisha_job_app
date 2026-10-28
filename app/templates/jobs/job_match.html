@@ -1,0 +1,14 @@
+{% extends 'jobs/job_base.html' %}
+{% block page_title %}AI Job Match · Maisha Jobs{% endblock %}
+{% block content %}
+<div class="container dashboard-page">
+    <section class="match-intro workspace-panel">
+        <span class="eyebrow"><i class="bi bi-stars me-2"></i>AI JOB MATCH</span>
+        <h1 class="mt-3">Let your experience<br>point the way.</h1>
+        <p class="text-muted">Upload your CV to discover open roles that share your skills and experience. See the matching terms, explore the requirements, and decide what fits.</p>
+        <a class="btn btn-primary" href="{{ url_for('candidate_bp.login_candidate', next=url_for('candidate_bp.candidate_profile') + '#my-cv') }}">Sign in &amp; upload your CV <i class="bi bi-arrow-right ms-2"></i></a>
+        <a class="btn btn-outline-primary" href="{{ url_for('jobs_bp.browse_jobs') }}">Browse jobs first</a>
+        <div class="match-steps"><div><span>01</span><h2>Upload once</h2><p>Add a PDF or DOCX CV to your candidate profile.</p></div><div><span>02</span><h2>Explore your matches</h2><p>Compare open roles using shared skills and text overlap.</p></div><div><span>03</span><h2>Make your next move</h2><p>Apply with your saved CV and track your progress.</p></div></div>
+    </section>
+</div>
+{% endblock %}

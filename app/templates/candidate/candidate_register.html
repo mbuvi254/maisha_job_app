@@ -1,0 +1,17 @@
+{% extends 'jobs/job_base.html' %}
+{% block page_title %}Create a candidate account · Maisha Jobs{% endblock %}
+{% block content %}
+<div class="container auth-layout">
+    <section class="auth-story"><span class="eyebrow">A WORLD OF POSSIBILITY</span><h1>Make room for<br><span>what comes next.</span></h1><p>Connect with opportunities, share your experience, and build your next chapter.</p><a class="story-link" href="{{ url_for('jobs_bp.index') }}">Explore Maisha Jobs <i class="bi bi-arrow-up-right"></i></a></section>
+    <section class="auth-box"><span class="eyebrow">CANDIDATE PORTAL</span><h2>Create your account</h2><p class="text-muted">A few details to get started. We’ll verify your email with a one-time code.</p>
+    {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+    <form method="POST"><input type="hidden" name="csrf_token" value="{{ auth_csrf_token() }}"><div class="row g-3">
+    <div class="col-sm-6"><label class="form-label" for="first">First name</label><input id="first" class="form-control" name="first_name" autocomplete="given-name" value="{{ request.form.get('first_name', '') }}" required></div>
+    <div class="col-sm-6"><label class="form-label" for="last">Last name</label><input id="last" class="form-control" name="last_name" autocomplete="family-name" value="{{ request.form.get('last_name', '') }}"></div>
+    <div class="col-12"><label class="form-label" for="email">Email address</label><input id="email" class="form-control" name="email" type="email" autocomplete="email" maxlength="254" value="{{ request.form.get('email', '') }}" required></div>
+    <div class="col-12"><label class="form-label" for="phone">Phone <span class="text-muted">(optional)</span></label><input id="phone" class="form-control" name="phone" type="tel" autocomplete="tel" value="{{ request.form.get('phone', '') }}"></div>
+    <div class="col-12 mt-4"><button type="submit" class="btn btn-primary w-100">Create account & send code <i class="bi bi-arrow-right ms-2"></i></button></div></div></form>
+    <p class="text-center text-muted small mt-4 mb-0">Already have an account? <a href="{{ url_for('candidate_bp.login_candidate') }}">Sign in</a></p>
+    </section>
+</div>
+{% endblock %}

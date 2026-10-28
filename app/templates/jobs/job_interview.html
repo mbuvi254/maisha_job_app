@@ -39,7 +39,7 @@
                         <form id="startForm" class="row g-3">
                             <div class="col-12 col-md-8">
                                 <label class="form-label fw-semibold">Candidate Email</label>
-                                <input type="email" id="candidateEmail" class="form-control form-control-lg" placeholder="name@example.com" required>
+                                <input type="email" id="candidateEmail" class="form-control form-control-lg" placeholder="name@example.com" value="{{ interview_prefill_email or '' }}" required>
                             </div>
                             <div class="col-12 col-md-4 d-flex align-items-end">
                                 <button type="submit" class="btn btn-primary btn-lg w-100" id="startBtn" {% if not job.ai_enabled %}disabled{% endif %}>
@@ -58,18 +58,28 @@
                                 <h2 class="h4 fw-bold mb-0" id="questionHeader">Question 1</h2>
                             </div>
                             <div class="text-muted small">
-                                <span id="progressText">0 / 5 answered</span>
+                                <span id="progressText">0 / 15 answered</span>
                             </div>
                         </div>
 
-                        <div class="alert alert-info border-0 mb-4" id="questionBox">
+                        <div class="alert alert-info border-0 mb-4" id="questionBox" style="white-space: pre-wrap">
                             Your question will appear here.
                         </div>
 
+                        <p class="text-muted small" id="coverageText"></p>
                         <form id="answerForm">
+                            <div id="codingFields" class="d-none mb-3">
+                                <label for="codeLanguage" class="form-label">Programming language</label>
+                                <input id="codeLanguage" class="form-control" placeholder="e.g. Python, JavaScript, SQL" maxlength="80">
+                                <p class="form-text">Submit code plus your approach and test cases. Code receives an AI review and is not executed.</p>
+                            </div>
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Your Answer</label>
                                 <textarea id="answerText" class="form-control" rows="6" placeholder="Type your answer here..." required></textarea>
+                            </div>
+                            <div id="explanationField" class="mb-3 d-none">
+                                <label for="codeExplanation" class="form-label">Approach, complexity, and test cases</label>
+                                <textarea id="codeExplanation" class="form-control" rows="4" maxlength="10000"></textarea>
                             </div>
                             <div class="d-flex flex-wrap gap-2">
                                 <button type="submit" class="btn btn-primary" id="answerBtn">Submit Answer</button>
@@ -84,6 +94,12 @@
                                     <h3 class="h6 fw-bold mb-2">Feedback</h3>
                                     <div class="mb-2"><strong>Score:</strong> <span id="scoreValue">0</span></div>
                                     <p class="mb-0 text-muted" id="feedbackText"></p>
+                                    <div class="suggested-answer mt-4">
+                                        <h4 class="h6">Suggested strong answer</h4>
+                                        <pre id="expectedAnswer" class="answer-content"></pre>
+                                        <p class="text-muted small">An example for learning; other approaches may also be valid.</p>
+                                        <a class="small" href="{{ url_for('candidate_bp.candidate_profile') }}">View saved application feedback</a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -106,6 +122,7 @@
     {% endif %}
 </div>
 
+{% if job is defined and job and not error %}
 <script>
 (() => {
     const startUrl = "{{ url_for('jobs_bp.job_interview_start', job_id=job.id) }}";
@@ -137,10 +154,24 @@
     let interviewId = null;
     let currentQuestion = '';
     let questionNumber = 0;
-    let questionLimit = 5;
+    let submitting = false;
+    const lockAnswer = () => {
+        answerText.readOnly = true;
+        answerBtn.disabled = true;
+        document.getElementById('codeLanguage').disabled = true;
+        document.getElementById('codeExplanation').readOnly = true;
+        if (questionNumber >= questionLimit) finishBtn.classList.remove('d-none');
+        else nextBtn.classList.remove('d-none');
+    };
+    let questionLimit = 15;
+    const prefillEmail = {{ (interview_prefill_email or '')|tojson }};
+    const autoStartInterview = {{ 'true' if interview_auto_start else 'false' }};
 
     const showAlert = (type, message) => {
-        alertBox.innerHTML = `<div class="alert alert-${type} soft-card border-0 mt-3">${message}</div>`;
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type} soft-card border-0 mt-3`;
+        alert.textContent = message;
+        alertBox.replaceChildren(alert);
     };
 
     const clearAlert = () => {
@@ -152,6 +183,19 @@
         questionNumber = payload.question_number || (questionNumber + 1);
         questionLimit = payload.question_limit || questionLimit;
         questionBox.textContent = currentQuestion;
+        const coding = payload.question_type === 'coding';
+        document.getElementById('codingFields').classList.toggle('d-none', !coding);
+        document.getElementById('explanationField').classList.toggle('d-none', !coding);
+        document.getElementById('codeLanguage').required = coding;
+        document.getElementById('codeExplanation').value = '';
+        document.getElementById('coverageText').textContent = [payload.focus, ...(payload.coverage || [])].filter(Boolean).join(' · ');
+        answerText.classList.toggle('font-monospace', coding);
+        answerText.rows = coding ? 16 : 6;
+        answerText.spellcheck = !coding;
+        answerText.placeholder = coding ? 'Write your solution here...' : 'Type your answer here...';
+        answerText.readOnly = false;
+        document.getElementById('codeLanguage').disabled = false;
+        document.getElementById('codeExplanation').readOnly = false;
         questionHeader.textContent = `Question ${questionNumber}`;
         progressText.textContent = `${Math.min(questionNumber - 1, questionLimit)} / ${questionLimit} answered`;
         answerText.value = '';
@@ -190,8 +234,8 @@
         }
         interviewCard.classList.add('d-none');
         resultCard.classList.remove('d-none');
-        totalScore.textContent = payload.total_score;
-        averageScore.textContent = payload.average_score;
+        totalScore.textContent = payload.average_score == null ? 'Pending feedback' : payload.total_score;
+        averageScore.textContent = payload.average_score ?? 'Pending feedback';
         responsesCount.textContent = payload.responses;
         showAlert('success', payload.message || 'Interview completed successfully.');
     };
@@ -212,13 +256,21 @@
             const response = await fetch(startUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
+                body: JSON.stringify({ email, token: new URLSearchParams(window.location.search).get('token') || '' })
             });
             const payload = await response.json();
             if (!response.ok) {
                 throw new Error(payload.error || 'Unable to start interview');
             }
 
+            if (payload.finished) {
+                startCard.classList.add('d-none');
+                resultCard.classList.remove('d-none');
+                totalScore.textContent = payload.average_score == null ? 'Pending feedback' : payload.total_score;
+                averageScore.textContent = payload.average_score ?? 'Pending feedback';
+                responsesCount.textContent = payload.responses;
+                return;
+            }
             interviewId = payload.interview_id;
             startCard.classList.add('d-none');
             interviewCard.classList.remove('d-none');
@@ -232,6 +284,11 @@
         }
     });
 
+    if (autoStartInterview && prefillEmail) {
+        document.getElementById('candidateEmail').value = prefillEmail;
+        window.setTimeout(() => startForm.requestSubmit(), 250);
+    }
+
     answerForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         clearAlert();
@@ -240,6 +297,7 @@
             return;
         }
 
+        if (submitting || answerText.readOnly) return;
         const answer = answerText.value.trim();
         if (!answer) {
             showAlert('danger', 'Please type an answer before submitting.');
@@ -248,6 +306,7 @@
 
         answerBtn.disabled = true;
         answerBtn.textContent = 'Checking...';
+        submitting = true;
 
         try {
             const response = await fetch(answerUrl(interviewId), {
@@ -255,17 +314,23 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     question: currentQuestion,
-                    answer: answer
+                    answer: answer,
+                    language: document.getElementById('codeLanguage').value,
+                    explanation: document.getElementById('codeExplanation').value
                 })
             });
             const payload = await response.json();
             if (!response.ok) {
+                if (response.status === 409) lockAnswer();
                 throw new Error(payload.error || 'Unable to evaluate answer');
             }
 
-            scoreValue.textContent = payload.score;
+            scoreValue.textContent = payload.score ?? 'Pending feedback';
             feedbackText.textContent = payload.feedback;
+            document.getElementById('expectedAnswer').textContent = payload.expected_answer || 'Your answer is saved. The suggested answer will appear in your application feedback when evaluation is available.';
+            lockAnswer();
             feedbackBox.classList.remove('d-none');
+            answerText.readOnly = true;
             progressText.textContent = `${questionNumber} / ${questionLimit} answered`;
 
             if (questionNumber >= questionLimit) {
@@ -273,21 +338,25 @@
             } else {
                 nextBtn.classList.remove('d-none');
             }
-            showAlert('info', 'Answer submitted. Review the feedback, then continue to the next question.');
+            showAlert('info', payload.evaluation_status === 'pending' ? 'Answer saved and locked. AI feedback is pending; you can continue to the next question.' : 'Answer submitted. Review the feedback, then continue to the next question.');
         } catch (error) {
             showAlert('danger', error.message);
         } finally {
-            answerBtn.disabled = false;
+            submitting = false;
+            answerBtn.disabled = answerText.readOnly;
             answerBtn.textContent = 'Submit Answer';
         }
     });
 
     nextBtn.addEventListener('click', async () => {
         clearAlert();
+        nextBtn.disabled = true;
         try {
             await loadNextQuestion();
         } catch (error) {
             showAlert('danger', error.message);
+        } finally {
+            nextBtn.disabled = false;
         }
     });
 
@@ -301,4 +370,5 @@
     });
 })();
 </script>
+{% endif %}
 {% endblock %}

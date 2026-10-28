@@ -25,3 +25,7 @@ def get_or_create_candidate(data):
 
     candidate_id = repo.insert(data)
     return repo.fetch_by_id(candidate_id)
+
+
+def update_candidate_cv(candidate_id, data):
+    return repo.update_cv(candidate_id, data)

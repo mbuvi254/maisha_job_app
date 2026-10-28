@@ -27,23 +27,94 @@
         <form method="POST" action="{{ form_action or url_for('employer_bp.add_job') }}" class="row g-4">
             <div class="col-12">
                 <label for="title" class="form-label">Job Title</label>
-                <input type="text" id="title" name="title" class="form-control form-control-lg" value="{{ job.title if job else '' }}" placeholder="e.g. Senior Backend Developer" required>
+                <input type="text" id="title" name="title" class="form-control form-control-lg" value="{{ form_data.get('title') if form_data else (job.title if job else '') }}" placeholder="e.g. Senior Backend Developer" required>
             </div>
 
             <div class="col-12">
-                <label for="description" class="form-label">Description</label>
-                <textarea id="description" name="description" rows="6" class="form-control" placeholder="Describe the role, responsibilities, and expectations.">{{ job.description if job else '' }}</textarea>
+                <label for="description" class="form-label">Overview</label>
+                <textarea id="description" name="description" rows="6" class="form-control" placeholder="Introduce the role, its purpose, and your team.">{{ form_data.get('description') if form_data else (job.description if job else '') }}</textarea>
+            </div>
+
+            {% for field, label, hint in [
+                ('responsibilities', 'What you will do', 'Describe the day-to-day responsibilities and expected outcomes. Use one item per line.'),
+                ('requirements', 'Requirements', 'List the required qualifications, experience, and skills. Use one item per line.'),
+                ('who_should_apply', 'Who should apply', 'Describe the experience and interests that would make someone a good fit.'),
+                ('salary_insight', 'Salary insight', 'Include the currency, range, pay period, benefits, and any flexibility. e.g. KES 100,000–150,000 per month.')
+            ] %}
+            <div class="col-12">
+                <label for="{{ field }}" class="form-label">{{ label }}</label>
+                <textarea id="{{ field }}" name="{{ field }}" rows="{{ 3 if field == 'salary_insight' else 5 }}" class="form-control" placeholder="{{ hint }}">{{ form_data.get(field, '') if form_data else (job.get(field) or '' if job else '') }}</textarea>
+            </div>
+            {% endfor %}
+            <div class="col-md-6">
+                <label for="location" class="form-label">Location</label>
+                <input id="location" name="location" class="form-control" value="{{ form_data.get('location', '') if form_data else (job.get('location') or '' if job else '') }}" placeholder="e.g. Nairobi, Kenya · Hybrid">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Posted date</label>
+                <div class="form-control bg-light">{{ job.created_at.strftime('%d %b %Y') if job and job.created_at and job.created_at.strftime is defined else (job.created_at if job and job.created_at else 'Set automatically when this job is created') }}</div>
+            </div>
+
+            <div class="col-md-6">
+                <label for="industry_id" class="form-label">Industry</label>
+                <select id="industry_id" name="industry_id" class="form-select">
+                    <option value="">Select industry</option>
+                    {% for industry in industries %}
+                        <option value="{{ industry.id }}" {% if (form_data.get('industry_id') if form_data else selected_industry_id) == industry.id %}selected{% endif %}>
+                            {{ industry.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">Industry is the parent tag in the hierarchy.</div>
+            </div>
+
+            <div class="col-md-6">
+                <label for="category_id" class="form-label">Role / Category</label>
+                <select id="category_id" name="category_id" class="form-select" required>
+                    <option value="">Select role/category</option>
+                    {% for group in grouped_categories %}
+                        {% if not selected_industry_id or selected_industry_id == group.industry.id %}
+                            <optgroup label="{{ group.industry.name }}">
+                                {% for category in group.categories %}
+                                    <option value="{{ category.id }}" {% if (form_data.get('category_id') if form_data else selected_category_id) == category.id %}selected{% endif %}>
+                                        {{ category.name }}
+                                    </option>
+                                {% endfor %}
+                            </optgroup>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+                <div class="form-text">This is the job's leaf tag and drives filtering.</div>
             </div>
 
             <div class="col-md-6">
                 <label for="skills" class="form-label">Skills</label>
-                <input type="text" id="skills" name="skills" class="form-control" value="{{ job.skills if job else '' }}" placeholder="Python, SQL, React">
+                <input type="text" id="skills" name="skills" class="form-control" value="{{ form_data.get('skills') if form_data else (job.skills if job else '') }}" placeholder="Python, SQL, React">
                 <div class="form-text">Separate skills with commas.</div>
             </div>
 
             <div class="col-md-6">
                 <label for="experience_level" class="form-label">Experience Level</label>
-                <input type="text" id="experience_level" name="experience_level" class="form-control" value="{{ job.experience_level if job else '' }}" placeholder="Junior, Mid, Senior">
+                {% set current_experience_level = form_data.get('experience_level') if form_data else (job.experience_level if job else '') %}
+                <select id="experience_level" name="experience_level" class="form-select" required>
+                    <option value="">Select experience level</option>
+                    {% set experience_levels = [
+                        ('Internship', 'Internship'),
+                        ('Entry Level', 'Entry Level'),
+                        ('Junior', 'Junior'),
+                        ('Mid Level', 'Mid Level'),
+                        ('Senior', 'Senior'),
+                        ('Lead', 'Lead'),
+                        ('Executive', 'Executive')
+                    ] %}
+                    {% if current_experience_level and current_experience_level not in ['Internship', 'Entry Level', 'Junior', 'Mid Level', 'Senior', 'Lead', 'Executive'] %}
+                        <option value="{{ current_experience_level }}" selected>{{ current_experience_level }} (Current)</option>
+                    {% endif %}
+                    {% for value, label in experience_levels %}
+                        <option value="{{ value }}" {% if current_experience_level == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">Choose a standard experience tier to keep job data consistent.</div>
             </div>
 
             <div class="col-md-6">
@@ -53,21 +124,36 @@
                     id="deadline"
                     name="deadline"
                     class="form-control"
-                    value="{% if job and job.deadline %}{{ job.deadline.strftime('%Y-%m-%dT%H:%M') }}{% endif %}"
+                    value="{{ form_data.get('deadline', '') if form_data else (job.deadline.strftime('%Y-%m-%dT%H:%M') if job and job.deadline else '') }}"
                 >
-                {% if job and job.deadline %}
+                {% if job and job.deadline and not (form_data and form_data.get('deadline')) %}
                     <div class="form-text">Current deadline: {{ job.deadline }}</div>
                 {% endif %}
             </div>
 
             <div class="col-md-6 d-flex align-items-end">
                 <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch" id="ai_enabled" name="ai_enabled" {% if job and job.ai_enabled %}checked{% endif %}>
+                    <input class="form-check-input" type="checkbox" role="switch" id="ai_enabled" name="ai_enabled" {% if (form_data and form_data.get('ai_enabled') == 'on') or (job and job.ai_enabled) %}checked{% endif %}>
                     <label class="form-check-label" for="ai_enabled">AI Enabled</label>
                     <div class="form-text">Mark if AI tools are part of the hiring workflow.</div>
                 </div>
             </div>
 
+            <div class="col-md-6 d-flex align-items-end">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="resume_required" name="resume_required" {% if (form_data and form_data.get('resume_required') == 'on') or (job and job.resume_required) %}checked{% endif %}>
+                    <label class="form-check-label" for="resume_required">Resume Required</label>
+                    <div class="form-text">Candidates must upload a CV or resume to apply.</div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="is_technical" name="is_technical" {% if (form_data and form_data.get('is_technical') == 'on') or (not form_data and job and job.is_technical) %}checked{% endif %}>
+                    <label class="form-check-label" for="is_technical">Technical job — include coding challenges</label>
+                    <div class="form-text">AI interviews include three coding challenges with examples, edge cases, and written code review.</div>
+                </div>
+            </div>
             <div class="col-12">
                 <button type="submit" class="btn btn-primary btn-lg">
                     <i class="bi bi-save me-1"></i> {{ submit_text }}
@@ -75,4 +161,64 @@
             </div>
         </form>
     </div>
+<script id="taxonomy-data" type="application/json">{{ grouped_categories|tojson }}</script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const taxonomy = JSON.parse(document.getElementById('taxonomy-data').textContent || '[]');
+    const industrySelect = document.getElementById('industry_id');
+    const categorySelect = document.getElementById('category_id');
+
+    if (!industrySelect || !categorySelect) {
+        return;
+    }
+
+    const selectedCategoryId = categorySelect.value;
+
+    const buildCategoryOptions = () => {
+        const selectedIndustryId = industrySelect.value;
+        const currentSelectedCategory = categorySelect.value || selectedCategoryId;
+        const visibleGroups = selectedIndustryId
+            ? taxonomy.filter(group => String(group.industry.id) === String(selectedIndustryId))
+            : taxonomy;
+
+        categorySelect.innerHTML = '';
+
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Select role/category';
+        categorySelect.appendChild(placeholder);
+
+        visibleGroups.forEach(group => {
+            if (!group.categories || group.categories.length === 0) {
+                return;
+            }
+
+            const optGroup = document.createElement('optgroup');
+            optGroup.label = group.industry.name;
+
+            group.categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name;
+                if (String(category.id) === String(currentSelectedCategory)) {
+                    option.selected = true;
+                }
+                optGroup.appendChild(option);
+            });
+
+            categorySelect.appendChild(optGroup);
+        });
+
+        if (currentSelectedCategory) {
+            const selectedOptionExists = Array.from(categorySelect.options).some(option => option.value === currentSelectedCategory);
+            if (!selectedOptionExists) {
+                categorySelect.value = '';
+            }
+        }
+    };
+
+    industrySelect.addEventListener('change', buildCategoryOptions);
+    buildCategoryOptions();
+});
+</script>
 {% endblock %}

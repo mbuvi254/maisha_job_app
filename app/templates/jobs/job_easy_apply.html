@@ -4,6 +4,51 @@
 <div class="container py-5">
     {% if error %}
         <div class="alert alert-danger soft-card">{{ error }}</div>
+    {% elif requires_login %}
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card soft-card border-0 shadow-sm">
+                    <div class="card-body p-4 p-lg-5">
+                        <div class="mb-4">
+                            <span class="job-tag mb-3"><i class="bi bi-lightning-charge"></i> Easy Apply</span>
+                            <h1 class="h3 fw-bold mb-2">{{ job.title }}</h1>
+                            <p class="text-muted mb-0">
+                                Please log in as a candidate to use Easy Apply.
+                            </p>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{{ login_url }}" class="btn btn-primary btn-lg">Login</a>
+                            <a href="{{ register_url }}" class="btn btn-outline-primary btn-lg">Create Candidate Account</a>
+                            <a href="{{ url_for('jobs_bp.job_apply', job_id=job.id) }}" class="btn btn-link btn-lg text-decoration-none">
+                                Use manual application instead
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% elif already_applied %}
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card soft-card border-0 shadow-sm">
+                    <div class="card-body p-4 p-lg-5">
+                        <div class="mb-4">
+                            <span class="job-tag mb-3"><i class="bi bi-check2-circle"></i> Already Applied</span>
+                            <h1 class="h3 fw-bold mb-2">{{ job.title }}</h1>
+                            <p class="text-muted mb-0">
+                                You have already submitted an application for this job.
+                            </p>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{{ url_for('jobs_bp.job_detail', job_id=job.id) }}" class="btn btn-primary btn-lg">Back to Job</a>
+                            <a href="{{ url_for('jobs_bp.index') }}" class="btn btn-outline-primary btn-lg">Browse Jobs</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     {% elif job %}
         <div class="row justify-content-center">
             <div class="col-lg-8">
@@ -13,23 +58,27 @@
                             <span class="job-tag mb-3"><i class="bi bi-lightning-charge"></i> Easy Apply</span>
                             <h1 class="h3 fw-bold mb-2">{{ job.title }}</h1>
                             <p class="text-muted mb-0">
-                                Use your candidate account email to submit this application in one step.
+                                Logged in as {{ candidate.first_name }} {{ candidate.last_name or '' }}. Submit with one click.
                             </p>
                         </div>
 
-                        <form method="POST" class="row g-3">
+                        <form method="POST" class="row g-3" enctype="multipart/form-data">
                             <div class="col-12">
-                                <label class="form-label fw-semibold">Candidate Email</label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    class="form-control form-control-lg"
-                                    placeholder="Enter the email on your candidate account"
-                                    required
-                                >
-                                <div class="form-text">
-                                    If an account exists for this email, we will submit the application immediately.
+                                <div class="alert alert-info mb-0">
+                                    Application will be submitted for <strong>{{ candidate.email }}</strong>.
                                 </div>
+                            </div>
+                            <div class="col-12">
+                                {% if candidate and candidate.cv_filename %}
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" name="use_profile_cv" id="use_profile_cv" checked>
+                                    <label class="form-check-label" for="use_profile_cv">Use my saved CV: {{ candidate.cv_name }}</label>
+                                    <div class="form-text">A new file below replaces the saved CV for this application only.</div>
+                                </div>
+                                {% endif %}
+                                <label for="resume" class="form-label">Resume / CV {% if job.resume_required %}<span class="text-danger">*</span>{% endif %}</label>
+                                <input type="file" id="resume" name="resume" class="form-control" accept=".pdf,.doc,.docx" {% if job.resume_required and not (candidate and candidate.cv_filename) %}required{% endif %}>
+                                <div class="form-text">Accepted formats: PDF, DOC, DOCX.</div>
                             </div>
 
                             <div class="col-12 d-flex flex-wrap gap-2 pt-2">

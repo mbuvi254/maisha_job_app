@@ -16,32 +16,51 @@
                         <div class="alert alert-danger">{{ error }}</div>
                     {% endif %}
 
-                    <form method="POST" action="{{ url_for('jobs_bp.job_apply', job_id=job.id) }}" class="row g-4">
-                        <div class="col-md-6">
-                            <label for="first_name" class="form-label">First Name</label>
-                            <input type="text" id="first_name" name="first_name" class="form-control form-control-lg" required>
+                    {% if candidate_application %}
+                        <div class="alert alert-success mb-0">
+                            You have already applied for this job.
+                            <a href="{{ url_for('jobs_bp.job_detail', job_id=job.id) }}" class="alert-link">Go back to the job</a>.
                         </div>
-                        <div class="col-md-6">
-                            <label for="last_name" class="form-label">Last Name</label>
-                            <input type="text" id="last_name" name="last_name" class="form-control form-control-lg">
-                        </div>
-                        <div class="col-12">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" id="email" name="email" class="form-control form-control-lg" required>
-                        </div>
-                        <div class="col-12">
-                            <label for="phone" class="form-label">Phone</label>
-                            <input type="tel" id="phone" name="phone" class="form-control form-control-lg">
-                        </div>
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                Submit Application
-                            </button>
-                            <a href="{{ url_for('jobs_bp.job_detail', job_id=job.id) }}" class="btn btn-outline-secondary btn-lg ms-2">
-                                Cancel
-                            </a>
-                        </div>
-                    </form>
+                    {% else %}
+                        <form method="POST" action="{{ url_for('jobs_bp.job_apply', job_id=job.id) }}" class="row g-4" enctype="multipart/form-data">
+                            <div class="col-md-6">
+                                <label for="first_name" class="form-label">First Name</label>
+                                <input type="text" id="first_name" name="first_name" class="form-control form-control-lg" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="last_name" class="form-label">Last Name</label>
+                                <input type="text" id="last_name" name="last_name" class="form-control form-control-lg">
+                            </div>
+                            <div class="col-12">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" id="email" name="email" class="form-control form-control-lg" required>
+                            </div>
+                            <div class="col-12">
+                                <label for="phone" class="form-label">Phone</label>
+                                <input type="tel" id="phone" name="phone" class="form-control form-control-lg">
+                            </div>
+                            <div class="col-12">
+                                {% if candidate and candidate.cv_filename %}
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" name="use_profile_cv" id="use_profile_cv" checked>
+                                    <label class="form-check-label" for="use_profile_cv">Use my saved CV: {{ candidate.cv_name }}</label>
+                                    <div class="form-text">A new file below replaces the saved CV for this application only.</div>
+                                </div>
+                                {% endif %}
+                                <label for="resume" class="form-label">Resume / CV {% if job.resume_required %}<span class="text-danger">*</span>{% endif %}</label>
+                                <input type="file" id="resume" name="resume" class="form-control form-control-lg" accept=".pdf,.doc,.docx" {% if job.resume_required and not (candidate and candidate.cv_filename) %}required{% endif %}>
+                                <div class="form-text">Accepted formats: PDF, DOC, DOCX.</div>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    Submit Application
+                                </button>
+                                <a href="{{ url_for('jobs_bp.job_detail', job_id=job.id) }}" class="btn btn-outline-secondary btn-lg ms-2">
+                                    Cancel
+                                </a>
+                            </div>
+                        </form>
+                    {% endif %}
                 </div>
             </div>
         </div>

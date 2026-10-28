@@ -6,13 +6,39 @@
             <h1 class="fw-bold mb-1">Application Detail</h1>
             <p class="text-muted">View candidate responses, interview score, and application status.</p>
         </div>
-        <a href="{{ url_for('employer_bp.view_job_applications', job_id=job.id) }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i> Back
-        </a>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('employer_bp.view_job_applications', job_id=job.id) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back
+            </a>
+            <a href="{{ url_for('employer_bp.view_job', job_id=job.id) }}" class="btn btn-outline-primary">
+                <i class="bi bi-eye me-1"></i> Job Detail
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="metric-card p-4 h-100">
+                <div class="text-muted small text-uppercase">Status</div>
+                <div class="fs-5 fw-semibold">{{ application.status }}</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="metric-card p-4 h-100">
+                <div class="text-muted small text-uppercase">Application Score</div>
+                <div class="fs-5 fw-semibold">{{ application.score if application.score is not none else 'Pending feedback' }}</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="metric-card p-4 h-100">
+                <div class="text-muted small text-uppercase">Applied On</div>
+                <div class="fs-5 fw-semibold">{{ application.created_at }}</div>
+            </div>
+        </div>
     </div>
 
     <div class="row g-4">
-        <div class="col-lg-4">
+        <div class="col-12 col-xxl-4">
             <div class="portal-card bg-white p-4 h-100">
                 <h2 class="h5 fw-bold mb-3">Candidate</h2>
                 {% if candidate %}
@@ -25,6 +51,14 @@
                     </div>
                     <div class="small text-muted">Phone</div>
                     <div class="fw-semibold mb-3">{{ candidate.phone or 'N/A' }}</div>
+                    <div class="small text-muted">Resume</div>
+                    <div class="fw-semibold mb-3">
+                        {% if application.resume_path %}
+                            <a href="{{ url_for('jobs_bp.application_resume', application_id=application.id) }}" target="_blank" rel="noopener">{{ application.resume_name or 'View Resume' }}</a>
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </div>
                     <div class="small text-muted">Candidate ID</div>
                     <div class="fw-semibold text-break">{{ candidate.id }}</div>
                 {% else %}
@@ -33,29 +67,95 @@
             </div>
         </div>
 
-        <div class="col-lg-8">
+        <div class="col-12 col-xxl-8">
             <div class="portal-card bg-white p-4 mb-4">
-                <h2 class="h5 fw-bold mb-3">Application Summary</h2>
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <div class="metric-card p-3 h-100">
-                            <div class="text-muted small text-uppercase">Status</div>
-                            <div class="fw-semibold">{{ application.status }}</div>
+                <h2 class="h5 fw-bold mb-3">Resume Analysis</h2>
+                {% if application.resume_path %}
+                    {% if application.resume_ai_fit or application.resume_ai_summary %}
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <div class="metric-card p-3 h-100">
+                                    <div class="text-muted small text-uppercase">Fit Score</div>
+                                    <div class="fw-semibold">{{ application.resume_ai_score or 0 }}/100</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card p-3 h-100">
+                                    <div class="text-muted small text-uppercase">Fit Label</div>
+                                    <div class="fw-semibold">{{ application.resume_ai_fit or 'N/A' }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card p-3 h-100">
+                                    <div class="text-muted small text-uppercase">Source</div>
+                                    <div class="fw-semibold">{{ application.resume_ai_source or 'N/A' }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card p-3 h-100">
+                                    <div class="text-muted small text-uppercase">Analyzed</div>
+                                    <div class="fw-semibold">{{ application.resume_ai_analyzed_at or 'N/A' }}</div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="metric-card p-3 h-100">
-                            <div class="text-muted small text-uppercase">Application Score</div>
-                            <div class="fw-semibold">{{ application.score }}</div>
+
+                        {% if application.resume_ai_summary %}
+                            <div class="mb-4">
+                                <div class="text-muted small text-uppercase mb-2">Summary</div>
+                                <div class="fw-semibold">{{ application.resume_ai_summary }}</div>
+                            </div>
+                        {% endif %}
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-body">
+                                        <div class="text-muted small text-uppercase mb-2">Strengths</div>
+                                        {% if application.resume_ai_strengths %}
+                                            <ul class="mb-0 ps-3">
+                                                {% for strength in application.resume_ai_strengths.split('\n') %}
+                                                    {% if strength.strip() %}
+                                                        <li>{{ strength }}</li>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </ul>
+                                        {% else %}
+                                            <div class="text-muted">No strengths captured.</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-body">
+                                        <div class="text-muted small text-uppercase mb-2">Gaps</div>
+                                        {% if application.resume_ai_gaps %}
+                                            <ul class="mb-0 ps-3">
+                                                {% for gap in application.resume_ai_gaps.split('\n') %}
+                                                    {% if gap.strip() %}
+                                                        <li>{{ gap }}</li>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </ul>
+                                        {% else %}
+                                            <div class="text-muted">No gaps captured.</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="metric-card p-3 h-100">
-                            <div class="text-muted small text-uppercase">Applied On</div>
-                            <div class="fw-semibold">{{ application.created_at }}</div>
-                        </div>
-                    </div>
-                </div>
+
+                        {% if application.resume_ai_recommendation %}
+                            <div class="alert alert-info mt-4 mb-0">
+                                <strong>Recommendation:</strong> {{ application.resume_ai_recommendation }}
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-info mb-0">Resume uploaded, but analysis has not been generated yet.</div>
+                    {% endif %}
+                {% else %}
+                    <div class="alert alert-warning mb-0">This application does not include a resume upload.</div>
+                {% endif %}
             </div>
 
             <div class="portal-card bg-white p-4 mb-4">
@@ -98,15 +198,16 @@
                                                 <div class="fw-semibold mb-1">Question {{ loop.index }}</div>
                                                 <p class="mb-0">{{ response.question }}</p>
                                             </div>
-                                            <span class="badge text-bg-success">Score {{ response.score }}</span>
+                                            <span class="badge text-bg-success">{{ 'Pending feedback' if response.score is none else 'Score ' ~ response.score|string }}</span>
                                         </div>
                                         <div class="mb-2">
                                             <div class="text-muted small text-uppercase">Candidate Answer</div>
-                                            <div>{{ response.answer }}</div>
+                                            <pre class="answer-content submitted-answer">{{ response.answer }}</pre>
                                         </div>
                                         <div>
                                             <div class="text-muted small text-uppercase">AI Feedback</div>
-                                            <div class="text-muted">{{ response.feedback }}</div>
+                                            <div class="text-muted answer-content">{{ response.feedback }}</div>
+                                            <div class="suggested-answer"><h4 class="h6">Suggested strong answer</h4><pre class="answer-content">{{ response.expected_answer or 'Not recorded for this earlier submission.' }}</pre></div>
                                         </div>
                                     </div>
                                 </div>

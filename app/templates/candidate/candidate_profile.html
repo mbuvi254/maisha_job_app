@@ -1,0 +1,72 @@
+{% extends 'jobs/job_base.html' %}
+{% block page_title %}My applications · Maisha Jobs{% endblock %}
+{% block content %}
+<div class="container dashboard-page">
+    <div class="dashboard-heading"><div><span class="eyebrow">YOUR CAREER WORKSPACE</span><h1>Hello, {{ candidate.first_name }}.</h1><p>Your applications, next steps, and interview feedback in one place.</p></div><a class="btn btn-primary" href="{{ url_for('jobs_bp.browse_jobs') }}">Find your next role <i class="bi bi-arrow-up-right ms-2"></i></a></div>
+    {% set completed = applications|selectattr('status', 'equalto', 'interview_completed')|list %}
+    <div class="stat-grid mb-4">
+        <div class="stat-tile"><span>Applications sent</span><strong>{{ applications|length }}</strong><small>Your opportunities in progress</small></div>
+        <div class="stat-tile"><span>Interviews completed</span><strong>{{ completed|length }}</strong><small>Review your answers and feedback</small></div>
+        <div class="stat-tile"><span>Saved opportunities</span><strong>{{ saved_jobs|length }}</strong><small>Ready when you are</small></div>
+    </div>
+    <nav class="workspace-tabs" aria-label="Candidate workspace sections">
+        <a href="#pending-interviews">Pending interviews <span>{{ pending_interviews|default([])|length }}</span></a>
+        <a href="#my-applications">Applied jobs</a>
+        <a href="#job-matches">Job matches</a>
+        <a href="#my-cv">My CV</a>
+    </nav>
+    <div class="candidate-layout">
+        <main>
+            <section id="pending-interviews" class="mb-4">
+                <div class="section-heading"><h2>Pending interviews</h2><span class="count-pill">{{ pending_interviews|default([])|length }}</span></div>
+                {% for application in pending_interviews|default([]) %}
+                <article class="pending-interview">
+                    <div><span class="eyebrow">{{ 'IN PROGRESS' if application.interview else 'READY TO START' }}</span><h3 class="h6 mt-2 mb-1">{{ application.job.title }}</h3><p class="small text-muted mb-0">{{ application.interview.response_count if application.interview else 0 }} of 15 questions answered</p></div>
+                    <a class="btn btn-sm btn-primary" href="{{ url_for('jobs_bp.job_interview', job_id=application.job_id, start=1) }}">{{ 'Continue interview' if application.interview else 'Start interview' }} <i class="bi bi-arrow-right ms-1"></i></a>
+                </article>
+                {% else %}<div class="workspace-panel text-muted small">You have no pending interviews. Interviews for applied roles will appear here when available.</div>{% endfor %}
+            </section>
+            <div class="section-heading" id="my-applications"><h2>My applications</h2><span class="count-pill">{{ applications|length }}</span></div>
+            {% for application in applications %}
+            {% set interview = application.interview %}
+            {% set count = interview.response_count|int if interview else 0 %}
+            <article class="application-card">
+                <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap"><div><span class="eyebrow">{{ application.job.category_name if application.job else 'APPLICATION' }}</span><h3 class="mt-2"><a href="{{ url_for('jobs_bp.job_detail', job_id=application.job_id) }}">{{ application.job.title if application.job else 'Role no longer available' }}</a></h3><p class="text-muted small">{{ application.job.location or 'Location not specified' if application.job else '' }}</p></div><span class="status-badge">{{ application.status|replace('_', ' ')|title }}</span></div>
+                <div class="application-timeline"><span class="is-done"><i class="bi bi-check-circle-fill"></i>Applied</span><span class="{{ 'is-done' if interview else '' }}"><i class="bi bi-{{ 'check-circle-fill' if interview else 'circle' }}"></i>{{ 'Interview complete' if interview and interview.status == 'completed' else ('Interview in progress' if interview else ('Interview pending' if application.job and application.job.ai_enabled else 'Employer review')) }}</span><span><i class="bi bi-circle"></i>Awaiting employer update</span></div>
+                {% if interview %}<div class="d-flex justify-content-between small mb-2"><span>Interview progress</span><strong>{{ count }} / 15 answered</strong></div><progress class="interview-progress" value="{{ count }}" max="15" aria-label="Interview questions answered">{{ count }} of 15</progress>{% endif %}
+                <div class="application-card-footer"><span>Applied {{ application.created_at.strftime('%d %b %Y') if application.created_at and application.created_at.strftime is defined else application.created_at }}</span><div class="d-flex gap-2 flex-wrap">{% if application.job and application.job.ai_enabled and (not interview or interview.status != 'completed') %}<a class="btn btn-sm btn-primary" href="{{ url_for('jobs_bp.job_interview', job_id=application.job_id, start=1) }}">{{ 'Continue interview' if interview else 'Start interview' }}</a>{% endif %}<a class="btn btn-sm btn-outline-primary" href="{{ url_for('candidate_bp.application_detail', application_id=application.id) }}">View progress &amp; feedback</a></div></div>
+            </article>
+            {% else %}<div class="empty-panel"><i class="bi bi-send"></i><h3>Your next chapter starts here</h3><p>You haven’t applied for a role yet. Explore opportunities that match your skills.</p><a class="btn btn-primary" href="{{ url_for('jobs_bp.browse_jobs') }}">Browse jobs</a></div>{% endfor %}
+            <section id="job-matches" class="mt-4">
+                <div class="section-heading"><h2>Jobs matched to your CV</h2><span class="count-pill">{{ matched_jobs|default([])|length }}</span></div>
+                {% if candidate.cv_text %}<p class="text-muted small">Suggested open roles based on skills and text in your CV. Overlap scores help you explore; they are not a hiring prediction. Roles you already applied to are excluded.</p>{% endif %}
+                {% for match in matched_jobs|default([]) %}
+                <article class="application-card">
+                    <div class="d-flex justify-content-between gap-3"><h3><a href="{{ url_for('jobs_bp.job_detail', job_id=match.job.id) }}">{{ match.job.title }}</a></h3><span class="status-badge">{{ match.match_score }}% text overlap</span></div>
+                    <p class="text-muted small">{{ match.job.location or 'Location not specified' }} · {{ match.job.experience_level or 'All experience levels' }}</p>
+                    <div class="detail-skills mb-3">{% for skill in match.matched_skills %}<span class="skill-chip">{{ skill }}</span>{% endfor %}</div>
+                    {% if not match.matched_skills %}<p class="small text-muted">Shared terms: {{ match.matched_terms|join(', ') }}</p>{% endif %}
+                    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('jobs_bp.job_easy_apply', job_id=match.job.id) }}">View &amp; apply <i class="bi bi-arrow-up-right ms-1"></i></a>
+                </article>
+                {% else %}<div class="empty-panel"><i class="bi bi-file-earmark-person"></i><h3>{{ 'No matching open roles yet' if candidate.cv_text else 'Find roles that fit your experience' }}</h3><p>{{ 'We will compare your CV with available roles whenever you open this page. You can also browse all jobs.' if candidate.cv_text else 'Upload a resume or CV to see open jobs that share your skills and experience.' }}</p><a class="btn btn-outline-primary" href="{{ '#my-cv' if not candidate.cv_text else url_for('jobs_bp.browse_jobs') }}">{{ 'Upload your CV' if not candidate.cv_text else 'Browse all jobs' }}</a></div>{% endfor %}
+            </section>
+        </main>
+        <aside>
+            <section class="workspace-panel mb-4" id="my-cv">
+                <span class="eyebrow">YOUR RESUME / CV</span><h2 class="h5 mt-3">Put your experience to work</h2>
+                <p class="text-muted small">Upload once to discover matching jobs and reuse your CV in applications.</p>
+                {% if candidate.cv_filename %}<div class="saved-cv"><i class="bi bi-file-earmark-check"></i><a href="{{ url_for('candidate_bp.download_cv') }}">{{ candidate.cv_name }}</a></div>{% endif %}
+                <form method="POST" action="{{ url_for('candidate_bp.upload_cv') }}" enctype="multipart/form-data" class="mt-3">
+                    <input type="hidden" name="csrf_token" value="{{ auth_csrf_token() }}">
+                    <label for="profile-cv" class="form-label">{{ 'Replace your CV' if candidate.cv_filename else 'Resume / CV file' }}</label>
+                    <input id="profile-cv" class="form-control" type="file" name="cv" accept=".pdf,.docx" required aria-describedby="cv-help">
+                    <p class="form-text" id="cv-help">PDF or DOCX · up to 5 MB. Use a document with selectable text.</p>
+                    <button class="btn btn-primary w-100" type="submit">{{ 'Update CV & refresh matches' if candidate.cv_filename else 'Upload CV & find matches' }}</button>
+                </form>
+            </section>
+            <section class="workspace-panel mb-4"><span class="eyebrow">YOUR PROFILE</span><h2 class="h5 mt-3">{{ candidate.first_name }} {{ candidate.last_name or '' }}</h2><p class="text-muted small mb-1">{{ candidate.email }}</p><p class="text-muted small">{{ candidate.phone or 'No phone number provided' }}</p><a class="small" href="{{ url_for('candidate_bp.candidate_logout') }}">Sign out</a></section>
+            <section class="workspace-panel"><h2 class="h5 mb-3">Saved jobs</h2>{% for job in saved_jobs %}<a class="saved-role" href="{{ url_for('jobs_bp.job_detail', job_id=job.id) }}"><strong>{{ job.title }}</strong><span>{{ job.experience_level or 'View opportunity' }} <i class="bi bi-arrow-up-right"></i></span></a>{% else %}<p class="text-muted small mb-0">Save a job while browsing to find it here later.</p>{% endfor %}</section>
+        </aside>
+    </div>
+</div>
+{% endblock %}

@@ -16,7 +16,7 @@ def get_job_by_id(job_id):
 
 
 def create_job(data):
-    required_fields = ["employer_id", "title"]
+    required_fields = ["employer_id", "title", "category_id"]
     for field in required_fields:
         if not data.get(field):
             return {"error": f"{field} is required"}, 400
@@ -29,7 +29,7 @@ def create_job(data):
 
 
 def update_job(job_id, data):
-    required_fields = ["employer_id", "title"]
+    required_fields = ["employer_id", "title", "category_id"]
     for field in required_fields:
         if not data.get(field):
             return {"error": f"{field} is required"}, 400
@@ -43,6 +43,10 @@ def update_job(job_id, data):
         "id": job_id
     }
 
-def get_all_jobs():
-    return repo.fetch_all()
-
+def get_all_jobs(industry_id=None, category_id=None, experience_level=None, hide_expired=True):
+    return repo.fetch_all(
+        industry_id=industry_id,
+        category_id=category_id,
+        experience_level=experience_level,
+        hide_expired=hide_expired,
+    )

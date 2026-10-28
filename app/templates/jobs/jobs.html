@@ -1,60 +1,37 @@
 {% extends 'jobs/job_base.html' %}
-{% block page_title %}Available Jobs{% endblock %}
+{% block page_title %}Find your next opportunity · Maisha Jobs{% endblock %}
 {% block content %}
-<div class="container py-5">
-    <div class="hero-banner p-4 p-lg-5 mb-4">
-        <div class="row align-items-center g-4">
-            <div class="col-lg-8">
-                <span class="job-tag mb-3"><i class="bi bi-briefcase"></i> Open Roles</span>
-                <h1 class="display-5 fw-bold mb-3">Find your next opportunity</h1>
-                <p class="lead mb-0 text-white-75">Browse open jobs, review details, and apply in a few simple steps.</p>
-            </div>
+<section class="discovery-hero">
+    <div class="live-pill"><span class="status-dot"></span> {{ jobs|length }} {{ 'matching opportunities' if search_query or selected_industry_id or selected_category_id or selected_experience_level else 'opportunities to explore' }}</div>
+    <h1>Your skills. Your ambition.<br><span>Your next opportunity.</span></h1>
+    <p class="hero-copy">Find work that moves you forward. Explore roles across industries, discover what fits, and take your next step with confidence.</p>
+    <div class="hero-actions"><a href="{{ url_for('jobs_bp.browse_jobs') }}" class="btn btn-primary">Explore opportunities <i class="bi bi-arrow-right ms-2"></i></a><a href="{{ url_for('employer_bp.login_employer') }}" class="btn btn-outline-primary">Find your next hire</a></div>
+    <div class="hero-trust"><span><i class="bi bi-check-circle"></i> Browse without an account</span><span><i class="bi bi-check-circle"></i> Apply with your profile</span><span><i class="bi bi-check-circle"></i> Track your progress</span></div>
+</section>
+<div class="container py-5" id="opportunities">
+    <div class="discovery-toolbar"><div><span class="eyebrow">MAKE YOUR NEXT MOVE</span><h2 class="mt-2">Explore opportunities</h2><p class="text-muted small mb-0">A new chapter could start right here.</p></div><span class="job-tag">{{ jobs|length }} roles</span></div>
+    <form method="GET" action="{{ url_for('jobs_bp.index') }}#opportunities" class="filter-panel">
+        <div class="row g-3 align-items-end">
+            <div class="col-12"><label class="form-label" for="q">What are you looking for?</label><div class="input-group"><span class="input-group-text bg-white"><i class="bi bi-search"></i></span><input class="form-control" id="q" type="search" name="q" value="{{ search_query }}" placeholder="Search by job title, skill, or industry"></div></div>
+            <div class="col-md-4"><label for="industry_id" class="form-label">Industry</label><select id="industry_id" name="industry_id" class="form-select"><option value="">All industries</option>{% for industry in industries %}<option value="{{ industry.id }}" {% if selected_industry_id == industry.id %}selected{% endif %}>{{ industry.name }}</option>{% endfor %}</select></div>
+            <div class="col-md-3"><label for="category_id" class="form-label">Role / category</label><select id="category_id" name="category_id" class="form-select"><option value="">All roles</option>{% for group in grouped_categories %}{% if not selected_industry_id or selected_industry_id == group.industry.id %}<optgroup label="{{ group.industry.name }}">{% for category in group.categories %}<option value="{{ category.id }}" {% if selected_category_id == category.id %}selected{% endif %}>{{ category.name }}</option>{% endfor %}</optgroup>{% endif %}{% endfor %}</select></div>
+            <div class="col-md-3"><label for="experience_level" class="form-label">Experience</label><select id="experience_level" name="experience_level" class="form-select"><option value="">All experience levels</option>{% for level in experience_levels %}<option value="{{ level }}" {% if selected_experience_level == level %}selected{% endif %}>{{ level }}</option>{% endfor %}</select></div>
+            <div class="col-md-2 d-grid"><button class="btn btn-primary" type="submit">Find jobs</button></div>
         </div>
+        {% if search_query or selected_industry_id or selected_category_id or selected_experience_level %}<div class="mt-3 d-flex flex-wrap align-items-center gap-2">{% for value in [search_query, selected_industry.name if selected_industry else '', selected_category.name if selected_category else '', selected_experience_level] %}{% if value %}<span class="job-tag">{{ value }}</span>{% endif %}{% endfor %}<a href="{{ url_for('jobs_bp.index') }}#opportunities" class="small ms-2">Clear filters</a></div>{% endif %}
+    </form>
+    <div class="row g-4">
+    {% for job in jobs %}
+        <div class="col-md-6 col-xl-4"><article class="card role-card h-100"><div class="card-body p-4 d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center mb-3"><div class="company-avatar" aria-hidden="true">{{ job.title[:1]|upper }}</div>{% if job.ai_enabled %}<span class="job-tag"><i class="bi bi-stars"></i> AI interview</span>{% endif %}</div>
+            <div class="text-muted small mb-1">{{ job.industry_name or 'Career opportunity' }}</div><h3 class="fw-bold mb-0">{{ job.title }}</h3>
+            <div class="role-meta"><div><i class="bi bi-briefcase me-2"></i>{{ job.experience_level or 'Experience not specified' }}</div><div class="mt-1"><i class="bi bi-grid me-2"></i>{{ job.category_name or 'General' }}</div></div>
+            <div class="d-flex flex-wrap gap-2 mb-3">{% if job.skills %}{% for skill in job.skills.split(',')[:4] %}<span class="skill-chip">{{ skill.strip() }}</span>{% endfor %}{% endif %}</div>
+            {% if job.deadline %}<div class="small text-muted mb-2"><i class="bi bi-calendar3 me-1"></i> Apply by {{ job.deadline.strftime('%d %b %Y') if job.deadline.strftime is defined else job.deadline }}</div>{% endif %}
+            <a class="role-link mt-auto pt-3" href="{{ url_for('jobs_bp.job_detail', job_id=job.id) }}">View opportunity <i class="bi bi-arrow-up-right"></i></a>
+        </div></article></div>
+    {% else %}<div class="col-12"><div class="card text-center p-5"><i class="bi bi-search fs-2 text-muted"></i><h3 class="h5 mt-3">No matching opportunities yet</h3><p class="text-muted">Try a broader search or check back for new roles.</p><a class="btn btn-outline-primary align-self-center" href="{{ url_for('jobs_bp.index') }}#opportunities">Reset search</a></div></div>{% endfor %}
     </div>
-
-    {% if jobs %}
-        <div class="row g-4">
-            {% for job in jobs %}
-                <div class="col-md-6 col-xl-4">
-                    <div class="card soft-card h-100 border-0">
-                        <div class="card-body p-4">
-                            <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
-                                <div>
-                                    <h2 class="h4 mb-1">{{ job.title }}</h2>
-                                    <div class="text-muted small">{{ job.experience_level }}</div>
-                                </div>
-                                {% if job.ai_enabled %}
-                                    <span class="badge text-bg-info">AI</span>
-                                {% endif %}
-                            </div>
-                            <p class="text-muted small mb-3">{{ job.description or 'No description provided.' }}</p>
-                            {% if job.skills %}
-                                <div class="d-flex flex-wrap gap-2 mb-3">
-                                    {% for skill in job.skills.split(',') %}
-                                        <span class="badge text-bg-light border">{{ skill.strip() }}</span>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                            {% if job.deadline %}
-                                <div class="small text-muted mb-4">
-                                    <i class="bi bi-calendar-event me-1"></i>
-                                    Deadline: {{ job.deadline }}
-                                </div>
-                            {% endif %}
-                            <a href="{{ url_for('jobs_bp.job_detail', job_id=job.id) }}" class="btn btn-primary w-100">
-                                View Details
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <div class="soft-card bg-white p-5 text-center">
-            <i class="bi bi-search fs-1 text-muted mb-3"></i>
-            <h2 class="h4">No jobs found</h2>
-            <p class="text-muted mb-0">Check back later for new opportunities.</p>
-        </div>
-    {% endif %}
+    <section class="steps-band"><div class="row g-4"><div class="col-md-4"><span class="step-number">01 / DISCOVER</span><strong>Find a role that fits</strong><p>Search by your skills and explore opportunities in your industry.</p></div><div class="col-md-4"><span class="step-number">02 / CONNECT</span><strong>Put your experience forward</strong><p>Create your profile and apply with your resume.</p></div><div class="col-md-4"><span class="step-number">03 / GROW</span><strong>Take the next step</strong><p>Track applications and complete interviews from your account.</p></div></div></section>
 </div>
 {% endblock %}

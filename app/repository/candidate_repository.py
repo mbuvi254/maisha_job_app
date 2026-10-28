@@ -53,3 +53,14 @@ class CandidateRepository:
         cursor.close()
         conn.close()
         return candidate_id
+
+    def update_cv(self, candidate_id, data):
+        conn = self.get_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("""UPDATE candidates SET cv_filename=%s, cv_name=%s,
+                    cv_text=%s, cv_uploaded_at=NOW() WHERE id=%s""",
+                    (data['cv_filename'], data['cv_name'], data['cv_text'], candidate_id))
+            conn.commit()
+        finally:
+            conn.close()

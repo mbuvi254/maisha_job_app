@@ -1,0 +1,12 @@
+{% extends 'jobs/job_base.html' %}
+{% block page_title %}Job categories · Maisha Jobs{% endblock %}
+{% block content %}
+<div class="container dashboard-page">
+    <div class="dashboard-heading"><div><span class="eyebrow">EXPLORE BY SPECIALITY</span><h1>Find your field.</h1><p>Browse roles by industry and category, then explore the opportunities within each.</p></div><a class="btn btn-primary" href="{{ url_for('jobs_bp.browse_jobs') }}">Browse all jobs <i class="bi bi-arrow-right ms-2"></i></a></div>
+    {% for group in groups %}
+    <section class="mb-4"><div class="section-heading"><h2>{{ group.industry.name }}</h2><a class="small" href="{{ url_for('jobs_bp.browse_jobs', industry_id=group.industry.id) }}">View industry <i class="bi bi-arrow-up-right"></i></a></div>
+        <div class="category-grid">{% for category in group.categories %}<a class="category-tile" href="{{ url_for('jobs_bp.browse_jobs', category_id=category.id) }}"><span class="category-icon"><i class="bi bi-grid"></i></span><strong>{{ category.name }}</strong><span>{{ counts.get(category.id|string, 0) }} open roles <i class="bi bi-arrow-up-right"></i></span></a>{% else %}<p class="text-muted small">No categories in this industry yet.</p>{% endfor %}</div>
+    </section>
+    {% else %}<div class="empty-panel"><h2 class="h5">Categories are on their way</h2><p>You can still explore all available roles.</p><a class="btn btn-outline-primary" href="{{ url_for('jobs_bp.browse_jobs') }}">Browse jobs</a></div>{% endfor %}
+</div>
+{% endblock %}

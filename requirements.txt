@@ -1,1 +1,2 @@
-Flask==2.3.3
+-r req.txt
+pypdf==6.21.3
