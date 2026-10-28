@@ -1,10 +1,25 @@
+# Environment / secrets
 .env
-.venv/
+.env.*
+!.env.example
+
+# Python
 __pycache__/
 *.py[cod]
-.pytest_cache/
+*.pyo
+.venv/
+venv/
 
-app/private/
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# User uploads
 app/static/resumes/
+
+# Archives/build artifacts
 *.zip
-req.txt
+.codex/
