@@ -8,7 +8,7 @@ from app.services.interview_service import get_interview_by_application_id, get_
 from app.services.candidate_service import get_candidate_by_email, get_candidate_by_id, get_or_create_candidate, update_candidate_cv
 from app.services.saved_job_service import get_saved_jobs_by_candidate_id
 from app.services.job_service import get_job_by_id, get_all_jobs
-from app.services.candidate_resume_service import save_profile_cv, cv_directory, match_open_jobs
+from app.services.candidate_resume_service import save_profile_cv, cv_directory, match_open_jobs, find_profile_cv
 from app.services.verification_service import (
     delete_verification_otp,
     generate_otp,
@@ -181,6 +181,7 @@ def candidate_profile():
         saved_jobs=saved_jobs,
         pending_interviews=pending_interviews,
         matched_jobs=matches,
+        cv_file_available=bool(find_profile_cv(candidate.get("cv_filename"), cv_directory())),
     )
 
 
@@ -238,9 +239,11 @@ def download_cv():
     candidate = _candidate_from_session() if _candidate_is_logged_in() else None
     if not candidate:
         abort(401)
-    if not candidate.get('cv_filename'):
-        abort(404)
-    response = send_from_directory(cv_directory(), candidate['cv_filename'], as_attachment=True,
+    path = find_profile_cv(candidate.get('cv_filename'), cv_directory())
+    if not path:
+        flash('Your saved CV file is unavailable. Please upload it again below. Your profile and job matches are still saved.', 'warning')
+        return redirect(url_for('candidate_bp.candidate_profile') + '#my-cv')
+    response = send_from_directory(path.parent, path.name, as_attachment=path.suffix.lower() != '.pdf',
                                    download_name=candidate.get('cv_name') or 'resume.pdf')
     response.headers['Cache-Control'] = 'private, no-store'
     return response

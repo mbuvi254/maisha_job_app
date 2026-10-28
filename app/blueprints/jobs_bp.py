@@ -24,7 +24,7 @@ from app.services.saved_job_service import (
 )
 from app.services.job_taxonomy_service import get_grouped_categories, get_industries, get_category_by_id, get_industry_by_id
 from app.services.resume_ai_service import analyze_resume_fit
-from app.services.candidate_resume_service import cv_directory
+from app.services.candidate_resume_service import cv_directory, find_profile_cv, find_application_resume
 from app.services.interview_service import (
     add_interview_response_once,
     evaluate_saved_response,
@@ -124,7 +124,7 @@ def _save_resume_upload(upload, candidate_id, job_id):
     if not _resume_upload_allowed(upload.filename):
         return {"error": "Resume must be a PDF, DOC, or DOCX file"}
 
-    upload_dir = os.path.join(current_app.root_path, "static", "resumes")
+    upload_dir = str(cv_directory())
     os.makedirs(upload_dir, exist_ok=True)
 
     original_name = secure_filename(upload.filename)
@@ -133,7 +133,7 @@ def _save_resume_upload(upload, candidate_id, job_id):
     upload.save(file_path)
 
     return {
-        "resume_path": f"resumes/{unique_name}",
+        "resume_path": f"candidate_cvs/{unique_name}",
         "resume_name": original_name,
     }
 
@@ -301,7 +301,7 @@ def job_apply(job_id):
     if not resume_result and use_profile_cv:
         if str(session.get("candidate_id")) != str(candidate["id"]) or not candidate.get("cv_filename"):
             abort(403)
-        if not (cv_directory() / candidate["cv_filename"]).is_file():
+        if not find_profile_cv(candidate["cv_filename"], cv_directory()):
             return render_template('jobs/job_apply.html' if request.endpoint == 'jobs_bp.job_apply' else 'jobs/job_easy_apply.html',
                                    job=job, candidate=candidate,
                                    error="Your saved CV is unavailable. Please upload it again.")
@@ -399,7 +399,7 @@ def job_easy_apply(job_id):
     if not resume_result and use_profile_cv:
         if str(session.get("candidate_id")) != str(candidate["id"]) or not candidate.get("cv_filename"):
             abort(403)
-        if not (cv_directory() / candidate["cv_filename"]).is_file():
+        if not find_profile_cv(candidate["cv_filename"], cv_directory()):
             return render_template('jobs/job_apply.html' if request.endpoint == 'jobs_bp.job_apply' else 'jobs/job_easy_apply.html',
                                    job=job, candidate=candidate,
                                    error="Your saved CV is unavailable. Please upload it again.")
@@ -744,13 +744,12 @@ def application_resume(application_id):
     employer_access = not isinstance(job, tuple) and bool(session.get('employer_id')) and str(session['employer_id']) == str(job.get('employer_id'))
     if not (candidate_access or admin_access or employer_access):
         abort(404)
-    path = application['resume_path']
-    if path.startswith('candidate_cvs/'):
-        directory, filename = cv_directory(), path.split('/', 1)[1]
-    else:
-        directory, filename = os.path.join(current_app.root_path, 'static'), path
-    response = send_from_directory(directory, filename, as_attachment=True,
-                                   download_name=application.get('resume_name') or 'resume.pdf')
+    path = find_application_resume(application['resume_path'], cv_directory())
+    if not path:
+        return render_template('shared/resume_unavailable.html', application=application,
+                               is_candidate=candidate_access), 410
+    response = send_from_directory(path.parent, path.name, as_attachment=path.suffix.lower() != '.pdf',
+                                   download_name=application.get('resume_name') or path.name)
     response.headers['Cache-Control'] = 'private, no-store'
     return response
 

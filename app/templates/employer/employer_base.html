@@ -245,6 +245,7 @@
     </style>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/maisha.css', v='20261027-otp') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/workspace.css', v='20261027-refresh') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pwa-navigation.css') }}">
 </head>
 <body>
     {% macro sidebar_inner() %}
@@ -388,9 +389,11 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register("{{ url_for('static', filename='pwa/sw.js') }}");
+                navigator.serviceWorker.register("{{ url_for('system_bp.service_worker') }}", { scope: "/" });
             });
         }
     </script>
+    {% include 'shared/pwa_navigation.html' %}
+    <script src="{{ url_for('static', filename='js/pwa-navigation.js') }}" defer></script>
 </body>
 </html>

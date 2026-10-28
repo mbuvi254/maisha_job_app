@@ -18,6 +18,7 @@ app.config.update(
     MAIL_DEFAULT_SENDER=os.getenv("MAIL_DEFAULT_SENDER") or os.getenv("MAIL_USERNAME"),
     MAIL_TIMEOUT=15,
     ADMIN_EMAILS=[email.strip().lower() for email in os.getenv("ADMIN_EMAILS", "").split(",") if email.strip()],
+    CV_STORAGE_DIRECTORY=os.getenv("CV_STORAGE_DIRECTORY"),
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
     SESSION_COOKIE_SECURE=os.getenv("SESSION_COOKIE_SECURE", "false").lower() == "true",

@@ -34,9 +34,11 @@ def save_guest(data):
     with connect() as conn:
         conn.execute('BEGIN IMMEDIATE')
         expired = conn.execute('SELECT data FROM guest_resumes WHERE created_at < ?', (time.time()-86400,)).fetchall()
-        from app.services.candidate_resume_service import cv_directory
+        from app.services.candidate_resume_service import find_profile_cv
         for row in expired:
-            (cv_directory() / json.loads(row['data'])['cv_filename']).unlink(missing_ok=True)
+            path = find_profile_cv(json.loads(row['data'])['cv_filename'])
+            if path:
+                path.unlink(missing_ok=True)
         conn.execute('DELETE FROM guest_resumes WHERE created_at < ?', (time.time()-86400,))
         conn.execute('INSERT INTO guest_resumes VALUES (?,?,?)', (token, time.time(), json.dumps(data)))
         conn.execute("INSERT INTO resume_events(role) VALUES ('guest')")

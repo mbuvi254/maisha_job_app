@@ -96,11 +96,18 @@
                             <div class="col-md-3">
                                 <div class="metric-card p-3 h-100">
                                     <div class="text-muted small text-uppercase">Analyzed</div>
-                                    <div class="fw-semibold">{{ application.resume_ai_analyzed_at or 'N/A' }}</div>
+                                    <div class="fw-semibold">{% if application.resume_ai_analyzed_at %}{{ application.resume_ai_analyzed_at.strftime('%d %b %Y, %H:%M') if application.resume_ai_analyzed_at.strftime is defined else application.resume_ai_analyzed_at }}{% else %}Date not recorded{% endif %}</div>
                                 </div>
                             </div>
                         </div>
 
+                        {% if not application.resume_ai_analyzed_at %}
+                        <form method="POST" action="{{ url_for('employer_bp.reanalyze_application_resume', job_id=job.id, application_id=application.id) }}" class="mb-4">
+                            <input type="hidden" name="csrf_token" value="{{ auth_csrf_token() }}">
+                            <p class="small text-muted">This earlier analysis has no recorded date. Run it again to refresh the result and record its completion time.</p>
+                            <button type="submit" class="btn btn-outline-primary btn-sm">Re-analyze resume</button>
+                        </form>
+                        {% endif %}
                         {% if application.resume_ai_summary %}
                             <div class="mb-4">
                                 <div class="text-muted small text-uppercase mb-2">Summary</div>

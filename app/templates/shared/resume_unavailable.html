@@ -1,0 +1,7 @@
+{% extends 'employer/employer_base.html' if session.get('employer_id') else 'jobs/job_base.html' %}
+{% block page_title %}Resume file unavailable · Maisha Jobs{% endblock %}
+{% block content %}
+<div class="container py-5"><section class="workspace-panel"><span class="eyebrow">RESUME FILE</span><h1 class="h3 mt-3">The original resume file is unavailable.</h1><p>The application is saved, but its PDF or document could not be found in the upload storage.</p><p class="text-muted">Restore the original upload from a backup, or arrange a new resume submission with the candidate. A newer profile CV does not replace the resume originally submitted for this application.</p>
+{% if is_candidate %}<a class="btn btn-primary" href="{{ url_for('candidate_bp.candidate_profile') }}#my-cv">Manage your profile CV</a>{% elif session.get('employer_id') %}<a class="btn btn-primary" href="{{ url_for('employer_bp.view_job_application_detail', job_id=application.job_id, application_id=application.id) }}">Back to application</a>{% elif session.get('admin_id') %}<a class="btn btn-primary" href="{{ url_for('admin_bp.dashboard') }}">Back to dashboard</a>{% endif %}
+</section></div>
+{% endblock %}

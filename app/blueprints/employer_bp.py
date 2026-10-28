@@ -841,3 +841,30 @@ def employer_logout():
 
     flash("You have been logged out", "success")
     return redirect(url_for('employer_bp.login_employer'))
+
+
+@employer_bp.post('/jobs/<string:job_id>/applications/<string:application_id>/analyze-resume')
+def reanalyze_application_resume(job_id, application_id):
+    if not _employer_is_logged_in():
+        from flask import abort
+        abort(401)
+    from app.blueprints.auth_bp import check_csrf
+    from flask import abort, current_app
+    check_csrf()
+    job = get_job_by_id(job_id)
+    if isinstance(job, tuple) or str(job.get('employer_id')) != str(session['employer_id']):
+        abort(404)
+    application = get_application_by_id(application_id)
+    if not application or str(application.get('job_id')) != str(job_id):
+        abort(404)
+    candidate = get_candidate_by_id(application.get('user_id'))
+    if not candidate or not application.get('resume_path'):
+        abort(400, description='A candidate and submitted resume are required for analysis.')
+    try:
+        analysis = analyze_resume_fit(job, candidate, application['resume_path'])
+        update_application_resume_analysis(application_id, analysis)
+        flash('Resume analysis refreshed and its completion time recorded.', 'success')
+    except Exception:
+        current_app.logger.exception('Resume re-analysis unavailable')
+        flash('Resume analysis is temporarily unavailable. Your previous result is still saved.', 'warning')
+    return redirect(url_for('employer_bp.view_job_application_detail', job_id=job_id, application_id=application_id))

@@ -14,9 +14,47 @@ STOP_WORDS = set('about after also and are been build can company experience for
 
 
 def cv_directory():
-    directory = Path(current_app.root_path) / 'private' / 'candidate_resumes'
+    configured = current_app.config.get('CV_STORAGE_DIRECTORY')
+    directory = Path(configured).expanduser() if configured else Path(current_app.instance_path) / 'candidate_resumes'
+    if not directory.is_absolute():
+        directory = Path(current_app.instance_path) / directory
     directory.mkdir(parents=True, exist_ok=True)
     return directory
+
+
+def find_profile_cv(filename, directory=None):
+    """Find an exact private filename, including uploads from older deployments."""
+    if not isinstance(filename, str) or not filename or filename in {'.', '..'} or '/' in filename or '\\' in filename:
+        return None
+    roots = [Path(directory) if directory is not None else cv_directory(),
+             Path(current_app.instance_path) / 'candidate_resumes',
+             Path(current_app.root_path) / 'private' / 'candidate_resumes']
+    for root in roots:
+        path = root / filename
+        if path.is_file() and not path.is_symlink():
+            return path
+    return None
+
+
+def find_application_resume(resume_path, directory=None):
+    if not isinstance(resume_path, str):
+        return None
+    if resume_path.startswith('candidate_cvs/'):
+        return find_profile_cv(resume_path.split('/', 1)[1], directory)
+    if resume_path.startswith('static/resumes/'):
+        resume_path = resume_path[len('static/'):]
+    if not resume_path.startswith('resumes/'):
+        return None
+    filename = resume_path[len('resumes/'):]
+    if not filename or filename in {'.', '..'} or '/' in filename or '\\' in filename:
+        return None
+    roots = [Path(directory) if directory is not None else cv_directory(),
+             Path(current_app.root_path) / 'static' / 'resumes']
+    for root in roots:
+        path = root / filename
+        if path.is_file() and not path.is_symlink():
+            return path
+    return None
 
 
 def read_cv_text(path):

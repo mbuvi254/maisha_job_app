@@ -256,12 +256,15 @@ def admin_resume(candidate_id):
     if not session.get('admin_id') or session.get('admin_email') not in current_app.config['ADMIN_EMAILS']:
         abort(403)
     from app.services.candidate_service import get_candidate_by_id
-    from app.services.candidate_resume_service import cv_directory
+    from app.services.candidate_resume_service import cv_directory, find_profile_cv
     from flask import send_from_directory
     candidate = get_candidate_by_id(candidate_id)
     if not candidate or not candidate.get('cv_filename'):
         abort(404)
-    response = send_from_directory(cv_directory(), candidate['cv_filename'], as_attachment=True,
+    path = find_profile_cv(candidate['cv_filename'], cv_directory())
+    if not path:
+        abort(404, description='The CV file is unavailable. Ask the candidate to upload it again or restore it from backup.')
+    response = send_from_directory(path.parent, path.name, as_attachment=True,
                                    download_name=candidate.get('cv_name') or 'resume.pdf')
     response.headers['Cache-Control'] = 'private, no-store'
     return response

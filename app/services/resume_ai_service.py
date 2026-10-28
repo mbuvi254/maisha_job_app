@@ -11,15 +11,9 @@ from app.services.ai_interview_service import call_ai
 
 
 def _resume_file_path(resume_path):
-    if not resume_path:
-        return None
-    if resume_path.startswith("candidate_cvs/"):
-        from app.services.candidate_resume_service import cv_directory
-        filename = resume_path.split("/", 1)[1]
-        if os.path.basename(filename) != filename:
-            return None
-        return str(cv_directory() / filename)
-    return os.path.join(current_app.root_path, "static", resume_path)
+    from app.services.candidate_resume_service import find_application_resume
+    path = find_application_resume(resume_path)
+    return str(path) if path else None
 
 
 def _extract_docx_text(file_path):
@@ -200,7 +194,7 @@ def _parse_json_response(text):
     return None
 
 
-def analyze_resume_fit(job, candidate, resume_path):
+def _analyze_resume_fit(job, candidate, resume_path):
     file_path = _resume_file_path(resume_path)
     resume_text = _extract_resume_text(file_path)
     if not resume_text:
@@ -275,7 +269,13 @@ Resume text:
         return _fallback_analysis(job, candidate, resume_text, reason=str(exc))
 
 
-def build_resume_analysis_payload(job, candidate, resume_path):
-    analysis = analyze_resume_fit(job, candidate, resume_path)
+def analyze_resume_fit(job, candidate, resume_path):
+    """Include the completion time on AI and fallback analysis results."""
+    analysis = _analyze_resume_fit(job, candidate, resume_path)
     analysis["analyzed_at"] = datetime.now()
     return analysis
+
+
+def build_resume_analysis_payload(job, candidate, resume_path):
+    """Compatibility alias for callers using the earlier payload helper."""
+    return analyze_resume_fit(job, candidate, resume_path)
