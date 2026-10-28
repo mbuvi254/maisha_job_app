@@ -157,11 +157,46 @@ class InterviewFlowTests(unittest.TestCase):
         self.assertEqual(self.post('answer', question=QUESTIONS[3], answer='def solve(): pass').status_code, 400)
         with patch('app.blueprints.jobs_bp.evaluate_saved_response', side_effect=lambda job, ident, response: dict(response, score=7, feedback='Good', expected_answer='A strong model answer', evaluation_status='completed')), patch(
                 'app.blueprints.jobs_bp.add_interview_response_once', return_value=True) as save:
-            result = self.post('answer', question=QUESTIONS[3], answer='def solve(): pass',
+            solution = '    def solve():\n        return []\n'
+            result = self.post('answer', question=QUESTIONS[3], answer=solution,
                                language='Python', explanation='Test empty input')
         self.assertEqual(result.status_code, 200)
         self.assertIn('Language: Python', save.call_args.args[0]['answer'])
         self.assertIn('Test empty input', save.call_args.args[0]['answer'])
+        self.assertIn('Code:\n' + solution + '\nExplanation', save.call_args.args[0]['answer'])
+
+    def test_rich_written_answer_saved_safely_and_evaluated_as_text(self):
+        with patch('app.blueprints.jobs_bp.evaluate_saved_response', side_effect=lambda job, ident, response: dict(response, score=8, feedback='Good', expected_answer='Example', evaluation_status='completed')), patch(
+                'app.blueprints.jobs_bp.add_interview_response_once', return_value=True) as save:
+            result = self.post('answer', question=QUESTIONS[0], answer='<p>Plan <strong>carefully</strong>.</p><ul><li>Review milestones</li></ul><script>bad()</script>', answer_format='html')
+        self.assertEqual(result.status_code, 200)
+        response = save.call_args.args[0]
+        self.assertIn('Plan carefully.', response['answer'])
+        self.assertIn('• Review milestones', response['answer'])
+        self.assertNotIn('<strong>', response['answer'])
+        self.assertIn('<strong>carefully</strong>', response['answer_html'])
+        self.assertNotIn('<script>', response['answer_html'])
+        self.assertNotIn('bad()', response['answer'])
+
+    def test_visually_empty_rich_answers_are_rejected(self):
+        for answer in ['<p><br></p>', '<p>&nbsp;</p>', '<script>bad()</script>', '<img src=x onerror=bad()>']:
+            with self.subTest(answer=answer), patch('app.blueprints.jobs_bp.add_interview_response_once') as save:
+                self.assertEqual(self.post('answer', question=QUESTIONS[0], answer=answer, answer_format='html').status_code, 400)
+                save.assert_not_called()
+
+    def test_coding_explanation_keeps_formatting_without_interpreting_code_as_html(self):
+        self.responses.extend([{}] * 3)
+        code = '    value = "<script>literal</script>"\n'
+        with patch('app.blueprints.jobs_bp.evaluate_saved_response', side_effect=lambda job, ident, response: dict(response, score=8, feedback='Good', expected_answer='Example', evaluation_status='completed')), patch(
+                'app.blueprints.jobs_bp.add_interview_response_once', return_value=True) as save:
+            result = self.post('answer', question=QUESTIONS[3], answer=code, language='Python', explanation='<p><strong>O(n)</strong> time.</p>', explanation_format='html')
+        self.assertEqual(result.status_code, 200)
+        response = save.call_args.args[0]
+        self.assertIn(code, response['answer'])
+        self.assertIn('O(n) time.', response['answer'])
+        self.assertIn('&lt;script&gt;literal&lt;/script&gt;', response['answer_html'])
+        self.assertIn('<strong>O(n)</strong>', response['answer_html'])
+        self.assertNotIn('<script>', response['answer_html'])
 
     def test_concurrent_duplicate_is_rejected_by_atomic_save(self):
         with patch('app.blueprints.jobs_bp.evaluate_saved_response', side_effect=lambda job, ident, response: dict(response, score=7, feedback='Good', expected_answer='A strong model answer', evaluation_status='completed')), patch(

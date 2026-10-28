@@ -187,7 +187,7 @@ You MUST return your response in this exact JSON format:
 }}
 
 The score must be a number between 0 and 10 (decimals allowed).
-The feedback should be specific and actionable.
+The feedback should be specific and actionable. Format feedback as a brief opening summary, then a Strengths: heading and an Areas for improvement: heading. Put each heading on its own line and use numbered points on separate lines beneath it. Keep feedback as a plain text string, without HTML.
 The expected_answer should be a complete model answer that demonstrates what an ideal response looks like.
 
 For coding questions, the expected answer should include:

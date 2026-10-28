@@ -1,6 +1,14 @@
 {% extends 'jobs/job_base.html' %}
 {% block page_title %}AI Interview{% endblock %}
 {% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/interview.css') }}">
+<script src="{{ url_for('static', filename='js/interview-feedback.js') }}"></script>
+<script src="{{ url_for('static', filename='js/interview-code-editor.js') }}"></script>
+<script id="aceLibrary" src="https://cdn.jsdelivr.net/npm/ace-builds@1.36.2/src-min-noconflict/ace.js" defer></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-lite.min.css">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" defer></script>
+<script id="interviewSummernoteLibrary" src="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-lite.min.js" defer></script>
+<script src="{{ url_for('static', filename='js/interview-rich-editor.js') }}"></script>
 <div class="container py-5">
     {% if error %}
         <div class="alert alert-danger soft-card">{{ error }}</div>
@@ -70,11 +78,13 @@
                         <form id="answerForm">
                             <div id="codingFields" class="d-none mb-3">
                                 <label for="codeLanguage" class="form-label">Programming language</label>
-                                <input id="codeLanguage" class="form-control" placeholder="e.g. Python, JavaScript, SQL" maxlength="80">
+                                <input id="codeLanguage" class="form-control" placeholder="e.g. Python, JavaScript, SQL" maxlength="80" list="codeLanguages"><datalist id="codeLanguages">{% for language in ['Python','JavaScript','TypeScript','Java','C++','C#','SQL','Go','Rust','PHP','Ruby','Kotlin','Swift','HTML','CSS','Bash'] %}<option value="{{ language }}">{% endfor %}</datalist>
                                 <p class="form-text">Submit code plus your approach and test cases. Code receives an AI review and is not executed.</p>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Your Answer</label>
+                                <label for="answerText" class="form-label fw-semibold">Your Answer</label>
+                                <div id="codeEditorShell" class="code-editor-shell mb-2" hidden><div class="code-editor-toolbar"><strong id="codeEditorLanguage">Plain text</strong><span>Syntax highlighting · Line numbers · Auto-indent</span></div><div id="codeEditor" class="interview-code-editor" aria-label="Code solution"></div><p class="code-editor-hint" id="codeEditorHint">Tab indents code. Press Esc to move to the plain text editor option.</p></div>
+                                <div id="codeEditorOptions" class="d-none mb-2"><label class="small"><input type="checkbox" id="plainCodeEditor"> Use plain text editor</label><span id="codeEditorStatus" class="small text-muted ms-3" role="status"></span></div>
                                 <textarea id="answerText" class="form-control" rows="6" placeholder="Type your answer here..." required></textarea>
                             </div>
                             <div id="explanationField" class="mb-3 d-none">
@@ -93,7 +103,7 @@
                                 <div class="card-body">
                                     <h3 class="h6 fw-bold mb-2">Feedback</h3>
                                     <div class="mb-2"><strong>Score:</strong> <span id="scoreValue">0</span></div>
-                                    <p class="mb-0 text-muted" id="feedbackText"></p>
+                                    <div id="feedbackText" aria-live="polite"></div>
                                     <div class="suggested-answer mt-4">
                                         <h4 class="h6">Suggested strong answer</h4>
                                         <pre id="expectedAnswer" class="answer-content"></pre>
@@ -144,6 +154,8 @@
     const questionHeader = document.getElementById('questionHeader');
     const progressText = document.getElementById('progressText');
     const answerText = document.getElementById('answerText');
+    const codeEditor = window.createInterviewCodeEditor(answerText, document.getElementById('codeLanguage'));
+    const richEditor = window.createInterviewRichEditor(answerText, document.getElementById('codeExplanation'), codeEditor);
     const feedbackBox = document.getElementById('feedbackBox');
     const scoreValue = document.getElementById('scoreValue');
     const feedbackText = document.getElementById('feedbackText');
@@ -157,6 +169,7 @@
     let submitting = false;
     const lockAnswer = () => {
         answerText.readOnly = true;
+        richEditor.lock();
         answerBtn.disabled = true;
         document.getElementById('codeLanguage').disabled = true;
         document.getElementById('codeExplanation').readOnly = true;
@@ -199,6 +212,8 @@
         questionHeader.textContent = `Question ${questionNumber}`;
         progressText.textContent = `${Math.min(questionNumber - 1, questionLimit)} / ${questionLimit} answered`;
         answerText.value = '';
+        document.getElementById('codeEditorOptions').classList.toggle('d-none', !coding);
+        richEditor.setQuestion(coding);
         feedbackBox.classList.add('d-none');
         nextBtn.classList.add('d-none');
         finishBtn.classList.add('d-none');
@@ -298,8 +313,8 @@
         }
 
         if (submitting || answerText.readOnly) return;
-        const answer = answerText.value.trim();
-        if (!answer) {
+        const answer = richEditor.value();
+        if (!answer.trim()) {
             showAlert('danger', 'Please type an answer before submitting.');
             return;
         }
@@ -307,6 +322,10 @@
         answerBtn.disabled = true;
         answerBtn.textContent = 'Checking...';
         submitting = true;
+        richEditor.lock();
+        document.getElementById('codeLanguage').disabled = true;
+        document.getElementById('codeExplanation').readOnly = true;
+        let answerSaved = false;
 
         try {
             const response = await fetch(answerUrl(interviewId), {
@@ -316,17 +335,20 @@
                     question: currentQuestion,
                     answer: answer,
                     language: document.getElementById('codeLanguage').value,
-                    explanation: document.getElementById('codeExplanation').value
+                    explanation: richEditor.explanation(),
+                    answer_format: richEditor.answerFormat(),
+                    explanation_format: richEditor.explanationFormat()
                 })
             });
             const payload = await response.json();
             if (!response.ok) {
-                if (response.status === 409) lockAnswer();
+                if (response.status === 409) { answerSaved = true; lockAnswer(); }
                 throw new Error(payload.error || 'Unable to evaluate answer');
             }
 
+            answerSaved = true;
             scoreValue.textContent = payload.score ?? 'Pending feedback';
-            feedbackText.textContent = payload.feedback;
+            window.InterviewFeedback.render(feedbackText, payload.feedback);
             document.getElementById('expectedAnswer').textContent = payload.expected_answer || 'Your answer is saved. The suggested answer will appear in your application feedback when evaluation is available.';
             lockAnswer();
             feedbackBox.classList.remove('d-none');
@@ -343,6 +365,11 @@
             showAlert('danger', error.message);
         } finally {
             submitting = false;
+            if (!answerSaved) {
+                richEditor.lock(false);
+                document.getElementById('codeLanguage').disabled = false;
+                document.getElementById('codeExplanation').readOnly = false;
+            }
             answerBtn.disabled = answerText.readOnly;
             answerBtn.textContent = 'Submit Answer';
         }

@@ -630,9 +630,9 @@ def job_interview_answer(job_id, interview_id):
 
     data = request.get_json(silent=True) or request.form
     question = (data.get("question") or "").strip()
-    answer = (data.get("answer") or "").strip()
+    answer = data.get("answer") or ""
 
-    if not question or not answer:
+    if not isinstance(answer, str) or not question or not answer.strip():
         return jsonify({"error": "Question and answer are required"}), 400
 
     responses = get_interview_responses(interview_id)
@@ -648,11 +648,20 @@ def job_interview_answer(job_id, interview_id):
         return jsonify({"error": "This question was already answered or is no longer current"}), 409
     if len(answer) > 50000:
         return jsonify({"error": "Answer must be under 50,000 characters"}), 400
+    answer_html = None
+    from app.services.interview_content_service import rich_answer, coding_answer_html
+    if slot["type"] != "coding" and data.get("answer_format") == "html":
+        answer, answer_html = rich_answer(answer)
+        if not answer:
+            return jsonify({"error": "Please type an answer before submitting"}), 400
     if slot["type"] == "coding":
         language = str(data.get("language") or "").strip()[:80]
         if not language:
             return jsonify({"error": "Choose a language for your code"}), 400
         explanation = str(data.get("explanation") or "").strip()[:10000]
+        if data.get("explanation_format") == "html":
+            explanation, explanation_html = rich_answer(explanation)
+            answer_html = coding_answer_html(language, answer, explanation_html)
         answer = f"Language: {language}\nCode:\n{answer}\nExplanation and tests:\n{explanation}"
 
     # Commit the answer before contacting the AI provider. A provider failure must
@@ -662,6 +671,7 @@ def job_interview_answer(job_id, interview_id):
         "interview_id": interview_id,
         "question": question,
         "answer": answer,
+        "answer_html": answer_html,
         "score": None,
         "feedback": "Your answer is saved. AI feedback is pending; you can continue the interview.",
         "expected_answer": None,

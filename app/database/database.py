@@ -541,6 +541,10 @@ class Database:
             )
         """)
 
+        cursor.execute("SHOW COLUMNS FROM interview_responses LIKE 'answer_html'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE interview_responses ADD COLUMN answer_html LONGTEXT NULL")
+
         cursor.execute("SHOW COLUMNS FROM interview_responses LIKE 'evaluation_status'")
         if not cursor.fetchone():
             cursor.execute("ALTER TABLE interview_responses ADD COLUMN evaluation_status VARCHAR(20) DEFAULT 'completed'")

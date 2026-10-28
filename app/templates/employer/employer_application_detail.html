@@ -1,6 +1,8 @@
 {% extends 'employer/employer_base.html' %}
 {% block page_title %}Application Detail{% endblock %}
 {% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/interview.css') }}">
+<script src="{{ url_for('static', filename='js/interview-feedback.js') }}" defer></script>
     <div class="page-header">
         <div>
             <h1 class="fw-bold mb-1">Application Detail</h1>
@@ -202,11 +204,11 @@
                                         </div>
                                         <div class="mb-2">
                                             <div class="text-muted small text-uppercase">Candidate Answer</div>
-                                            <pre class="answer-content submitted-answer">{{ response.answer }}</pre>
+                                            {% if response.answer_html %}<div class="submitted-answer rich-interview-answer">{{ response.answer_html|job_html }}</div>{% else %}<pre class="answer-content submitted-answer">{{ response.answer }}</pre>{% endif %}
                                         </div>
                                         <div>
                                             <div class="text-muted small text-uppercase">AI Feedback</div>
-                                            <div class="text-muted answer-content">{{ response.feedback }}</div>
+                                            <div data-interview-feedback>{{ response.feedback }}</div>
                                             <div class="suggested-answer"><h4 class="h6">Suggested strong answer</h4><pre class="answer-content">{{ response.expected_answer or 'Not recorded for this earlier submission.' }}</pre></div>
                                         </div>
                                     </div>

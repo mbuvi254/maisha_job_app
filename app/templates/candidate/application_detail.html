@@ -1,6 +1,8 @@
 {% extends 'jobs/job_base.html' %}
 {% block page_title %}Application progress · Maisha Jobs{% endblock %}
 {% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/interview.css') }}">
+<script src="{{ url_for('static', filename='js/interview-feedback.js') }}" defer></script>
 {% set pending_evaluations = responses|selectattr('score', 'none')|list|length %}
 <div class="container dashboard-page">
     <a class="back-to-jobs" href="{{ url_for('candidate_bp.candidate_profile') }}"><i class="bi bi-arrow-left me-2"></i>My applications</a>
@@ -12,7 +14,7 @@
     <article class="workspace-panel mb-3">
         <div class="d-flex justify-content-between gap-3 mb-3"><h3 class="h6">Question {{ loop.index }}</h3><span class="status-badge">{{ 'Pending feedback' if response.score is none else response.score|string ~ ' / 10' }}</span></div>
         <p class="answer-content fw-semibold">{{ response.question }}</p>
-        <details class="response-details" {% if loop.last %}open{% endif %}><summary>View your answer, feedback, and suggested answer</summary><h4 class="h6 mt-4">Your submitted answer</h4><pre class="answer-content submitted-answer">{{ response.answer }}</pre><h4 class="h6 mt-4">AI feedback</h4><p class="answer-content text-muted">{{ response.feedback }}</p><div class="suggested-answer"><h4 class="h6">Suggested strong answer</h4><pre class="answer-content">{{ response.expected_answer or ('The suggested answer will appear when feedback is available.' if response.score is none else 'A suggested answer was not recorded for this earlier submission.') }}</pre><p class="small text-muted mb-0">An example for learning. Other well-reasoned approaches may also be valid.</p></div></details>
+        <details class="response-details" {% if loop.last %}open{% endif %}><summary>View your answer, feedback, and suggested answer</summary><h4 class="h6 mt-4">Your submitted answer</h4>{% if response.answer_html %}<div class="submitted-answer rich-interview-answer">{{ response.answer_html|job_html }}</div>{% else %}<pre class="answer-content submitted-answer">{{ response.answer }}</pre>{% endif %}<h4 class="h6 mt-4">AI feedback</h4><div data-interview-feedback>{{ response.feedback }}</div><div class="suggested-answer"><h4 class="h6">Suggested strong answer</h4><pre class="answer-content">{{ response.expected_answer or ('The suggested answer will appear when feedback is available.' if response.score is none else 'A suggested answer was not recorded for this earlier submission.') }}</pre><p class="small text-muted mb-0">An example for learning. Other well-reasoned approaches may also be valid.</p></div></details>
         {% if response.evaluation_status == 'pending' %}
         <form class="mt-3" method="POST" action="{{ url_for('candidate_bp.retry_feedback', application_id=application.id, response_id=response.id) }}">
             <input type="hidden" name="csrf_token" value="{{ auth_csrf_token() }}">

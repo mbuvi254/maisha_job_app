@@ -160,10 +160,10 @@ class InterviewRepository:
                 cursor.close()
                 return False
             cursor.execute("""INSERT INTO interview_responses
-                (id, interview_id, question, answer, score, feedback, expected_answer, question_number, evaluation_status)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                (id, interview_id, question, answer, score, feedback, expected_answer, question_number, evaluation_status, answer_html)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                 (data.get("id") or str(uuid.uuid4()), data["interview_id"], data["question"], data["answer"],
-                 data["score"], data["feedback"], data["expected_answer"], expected_count + 1, data.get("evaluation_status", "completed")))
+                 data["score"], data["feedback"], data["expected_answer"], expected_count + 1, data.get("evaluation_status", "completed"), data.get("answer_html")))
             cursor.execute("""UPDATE interviews SET total_score=total_score+%s,
                 response_count=%s WHERE id=%s""",
                 (data["score"] or 0, actual + 1, data["interview_id"]))
